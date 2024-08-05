@@ -7,29 +7,9 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Vectorank</a>
-        <div class="collapse navbar-collapse">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="index.php">Liste des joueurs</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="add_player.php">Ajouter un joueur</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="add_match.php">Ajouter un match</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="matches_list.php">Liste des matchs</a>
-                </li>
-            </ul>
-        </div>
-    </nav>
+<?php include 'navbar.php'; ?>
 <div class="container mt-5">
     <h1>Liste des joueurs</h1>
-    <a href="add_player.php" class="btn btn-primary mb-3">Ajouter un joueur</a>
-    <a href="add_match.php" class="btn btn-primary mb-3">Ajouter un match</a>
     <table class="table table-bordered">
         <thead>
         <tr>
@@ -48,8 +28,8 @@
                     WHEN mmr >= 4000 THEN 'Challenger' 
                     WHEN mmr >= 3000 THEN 'Grandmaster' 
                     WHEN mmr >= 2750 THEN 'Master' 
-                    WHEN mmr >= 2500 THEN 'Emerald' 
-                    WHEN mmr >= 2250 THEN 'Diamond' 
+                    WHEN mmr >= 2500 THEN 'Diamond' 
+                    WHEN mmr >= 2250 THEN 'Emerald' 
                     WHEN mmr >= 2000 THEN 'Platinum' 
                     WHEN mmr >= 1500 THEN 'Gold' 
                     WHEN mmr >= 1000 THEN 'Silver' 
