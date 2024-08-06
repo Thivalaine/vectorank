@@ -25,11 +25,11 @@
         include 'db.php';
         // Modifiez la requête pour trier par MMR
         $result = $conn->query("SELECT *, CASE 
-                    WHEN mmr >= 4000 THEN 'Challenger' 
-                    WHEN mmr >= 3000 THEN 'Grandmaster' 
-                    WHEN mmr >= 2750 THEN 'Master' 
-                    WHEN mmr >= 2500 THEN 'Diamond' 
-                    WHEN mmr >= 2250 THEN 'Emerald' 
+                    WHEN mmr >= 5000 THEN 'Challenger' 
+                    WHEN mmr >= 4000 THEN 'Grandmaster' 
+                    WHEN mmr >= 3500 THEN 'Master' 
+                    WHEN mmr >= 3000 THEN 'Diamond' 
+                    WHEN mmr >= 2500 THEN 'Emerald' 
                     WHEN mmr >= 2000 THEN 'Platinum' 
                     WHEN mmr >= 1500 THEN 'Gold' 
                     WHEN mmr >= 1000 THEN 'Silver' 

@@ -5,6 +5,7 @@
     <title>Profil du joueur</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
 <?php include 'navbar.php'; ?>
@@ -16,7 +17,6 @@
     // Récupérer les informations du joueur
     $result = $conn->query("SELECT * FROM players WHERE id = $playerId");
     
-    // Vérifier si la requête SQL a réussi
     if (!$result) {
         echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
         exit;
@@ -24,7 +24,6 @@
 
     $player = $result->fetch_assoc();
 
-    // Vérifier si le joueur existe
     if (!$player) {
         echo "<h2>Joueur non trouvé.</h2>";
         exit;
@@ -32,161 +31,193 @@
 
     // Compter les victoires et défaites
     $winsResult = $conn->query("SELECT COUNT(*) as wins FROM matches WHERE (player1 = $playerId AND score1 > score2) OR (player2 = $playerId AND score2 > score1)");
-    if (!$winsResult) {
-        echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
-        exit;
-    }
-    $winsCount = $winsResult->fetch_assoc()['wins'];
+    $winsCount = $winsResult ? $winsResult->fetch_assoc()['wins'] : 0;
 
     $lossesResult = $conn->query("SELECT COUNT(*) as losses FROM matches WHERE (player1 = $playerId AND score1 < score2) OR (player2 = $playerId AND score2 < score1)");
-    if (!$lossesResult) {
-        echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
-        exit;
-    }
-    $lossesCount = $lossesResult->fetch_assoc()['losses'];
+    $lossesCount = $lossesResult ? $lossesResult->fetch_assoc()['losses'] : 0;
 
     // Calculer le ratio
     $totalGames = $winsCount + $lossesCount;
-    $winRatio = $totalGames > 0 ? ($winsCount / $totalGames) * 100 : 0; // pourcentage de victoires
+    $winRatio = $totalGames > 0 ? ($winsCount / $totalGames) * 100 : 0;
 
     // Pagination
-    $matchesPerPage = isset($_GET['matchesPerPage']) ? (int)$_GET['matchesPerPage'] : 10; // Nombre d'éléments par page
-    $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Page actuelle
-    $offset = ($currentPage - 1) * $matchesPerPage; // Décalage pour la requête SQL
+    $matchesPerPage = isset($_GET['matchesPerPage']) ? (int)$_GET['matchesPerPage'] : 10;
+    $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+    $offset = ($currentPage - 1) * $matchesPerPage;
+
+    // Rechercher les matchs par critère
+    $searchQuery = '';
+    if (isset($_GET['search']) && !empty($_GET['search'])) {
+        $searchQuery = $conn->real_escape_string($_GET['search']);
+        $searchCondition = " AND (player1 IN (SELECT id FROM players WHERE name LIKE '%$searchQuery%') OR player2 IN (SELECT id FROM players WHERE name LIKE '%$searchQuery%'))";
+    } else {
+        $searchCondition = '';
+    }
 
     // Compter le nombre total de matchs
-    $totalMatchesResult = $conn->query("SELECT COUNT(*) as total FROM matches WHERE player1 = $playerId OR player2 = $playerId");
-    if (!$totalMatchesResult) {
-        echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
-        exit;
+    $totalMatchesResult = $conn->query("SELECT COUNT(*) as total FROM matches WHERE (player1 = $playerId OR player2 = $playerId) $searchCondition");
+    $totalMatches = $totalMatchesResult ? $totalMatchesResult->fetch_assoc()['total'] : 0;
+    $totalPages = ceil($totalMatches / $matchesPerPage);
+
+    // Obtenir le plus haut MMR atteint par le joueur
+    $highestMMRResult = $conn->query("
+        SELECT MAX(GREATEST(
+            IF(player1 = $playerId, old_mmr1, 0), 
+            IF(player2 = $playerId, old_mmr2, 0), 
+            IF(player1 = $playerId, new_mmr1, 0), 
+            IF(player2 = $playerId, new_mmr2, 0)
+        )) as highest_mmr 
+        FROM matches 
+        WHERE player1 = $playerId OR player2 = $playerId
+    ");
+    $highestMMR = $highestMMRResult ? $highestMMRResult->fetch_assoc()['highest_mmr'] : 0;
+
+    // Obtenir le joueur contre qui il perd le plus souvent
+    $mostLostAgainstResult = $conn->query("
+        SELECT CASE 
+            WHEN player1 = $playerId THEN player2
+            ELSE player1
+        END as opponent_id, COUNT(*) as losses
+        FROM matches
+        WHERE (player1 = $playerId AND score1 < score2) OR (player2 = $playerId AND score2 < score1)
+        GROUP BY opponent_id
+        ORDER BY losses DESC
+        LIMIT 1
+    ");
+    $mostLostAgainst = $mostLostAgainstResult ? $mostLostAgainstResult->fetch_assoc() : null;
+    $mostLostAgainstName = $mostLostAgainst ? $conn->query("SELECT name FROM players WHERE id = {$mostLostAgainst['opponent_id']}")->fetch_assoc()['name'] : 'N/A';
+
+    // Obtenir le joueur contre qui il gagne le plus souvent
+    $mostWonAgainstResult = $conn->query("
+        SELECT CASE 
+            WHEN player1 = $playerId THEN player2
+            ELSE player1
+        END as opponent_id, COUNT(*) as wins
+        FROM matches
+        WHERE (player1 = $playerId AND score1 > score2) OR (player2 = $playerId AND score2 > score1)
+        GROUP BY opponent_id
+        ORDER BY wins DESC
+        LIMIT 1
+    ");
+    $mostWonAgainst = $mostWonAgainstResult ? $mostWonAgainstResult->fetch_assoc() : null;
+    $mostWonAgainstName = $mostWonAgainst ? $conn->query("SELECT name FROM players WHERE id = {$mostWonAgainst['opponent_id']}")->fetch_assoc()['name'] : 'N/A';
+
+    // Calculer la plus grande série de victoires
+    $matchesResult = $conn->query("
+        SELECT * 
+        FROM matches 
+        WHERE player1 = $playerId OR player2 = $playerId
+        ORDER BY match_date ASC
+    ");
+    $currentStreak = 0;
+    $maxStreak = 0;
+    if ($matchesResult) {
+        while ($match = $matchesResult->fetch_assoc()) {
+            if (($match['player1'] == $playerId && $match['score1'] > $match['score2']) || 
+                ($match['player2'] == $playerId && $match['score2'] > $match['score1']) ) {
+                $currentStreak++;
+                if ($currentStreak > $maxStreak) {
+                    $maxStreak = $currentStreak;
+                }
+            } else {
+                $currentStreak = 0;
+            }
+        }
     }
-    $totalMatches = $totalMatchesResult->fetch_assoc()['total'];
-    $totalPages = ceil($totalMatches / $matchesPerPage); // Nombre total de pages
     ?>
-    
+
     <h1>Profil de <?php echo htmlspecialchars($player['name']); ?></h1>
     <p><strong>ID:</strong> <?php echo $player['id']; ?></p>
     <p><strong>MMR Actuel:</strong> <?php echo $player['mmr']; ?></p>
     <p><strong>Rang Actuel:</strong> <?php echo htmlspecialchars($player['rank']); ?></p>
-    <p><strong>Victoire(s):</strong> <?php echo $winsCount; ?></p>
-    <p><strong>Défaite(s):</strong> <?php echo $lossesCount; ?></p>
-    <p><strong>Ratio de Victoires:</strong> <?php echo number_format($winRatio, 2) . '%'; ?></p> <!-- Afficher le ratio -->
-    <table class="table table-striped">
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Statistiques</h5>
+            <ul class="list-group">
+                <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Victoire(s):</strong> <?php echo $winsCount; ?></li>
+                <li class="list-group-item"><i class="fas fa-times-circle"></i> <strong>Défaite(s):</strong> <?php echo $lossesCount; ?></li>
+                <li class="list-group-item"><i class="fas fa-chart-pie"></i> <strong>Ratio de Victoires:</strong> <?php echo number_format($winRatio, 2) . '%'; ?></li>
+                <li class="list-group-item"><i class="fas fa-futbol"></i> <strong>Matchs Disputés:</strong> <?php echo $totalGames; ?></li>
+                <li class="list-group-item"><i class="fas fa-star"></i> <strong>Plus Grande Série de Victoires:</strong> <?php echo $maxStreak; ?></li>
+                <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Plus Haut MMR Atteint:</strong> <?php echo $highestMMR; ?></li>
+                <li class="list-group-item"><i class="fas fa-user-friends"></i> <strong>L'Opposant à éviter :</strong> <?php echo htmlspecialchars($mostLostAgainstName); ?></li>
+                <li class="list-group-item"><i class="fas fa-user-check"></i> <strong>L'Opposant favori :</strong> <?php echo htmlspecialchars($mostWonAgainstName); ?></li>
+            </ul>
+        </div>
+    </div>
+
+    <h2>Liste des Matchs</h2>
+
+    <form class="d-flex mb-3" method="GET" action="player_profile.php">
+        <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+        <input class="form-control me-2" type="search" placeholder="Rechercher un joueur" aria-label="Search" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
+        <button class="btn btn-outline-success" type="submit">Rechercher</button>
+    </form>
+
+    <table class="table">
         <thead>
-        <tr>
-            <th>ID Match</th>
-            <th>Joueur 1</th>
-            <th>Score Joueur 1</th>
-            <th>Score Joueur 2</th>
-            <th>Joueur 2</th>
-            <th>Ancien MMR Joueur 1</th>
-            <th>Nouveau MMR Joueur 1</th>
-            <th>Ancien MMR Joueur 2</th>
-            <th>Nouveau MMR Joueur 2</th>
-            <th>Date du match</th>
-        </tr>
+            <tr>
+                <th>Date</th>
+                <th>Adversaire</th>
+                <th>Score</th>
+                <th>MMR (Ancien → <strong>Nouveau</strong>)</th>
+                <th>MMR Adversaire (Ancien → <strong>Nouveau</strong>)</th>
+            </tr>
         </thead>
         <tbody>
-        <?php
-        $matches = $conn->query("SELECT * FROM matches WHERE player1 = $playerId OR player2 = $playerId LIMIT $offset, $matchesPerPage");
-        if (!$matches) {
-            echo "<tr><td colspan='10'>Erreur de requête SQL : " . $conn->error . "</td></tr>";
-        } else {
-            while ($match = $matches->fetch_assoc()) {
-                $player1Name = $conn->query("SELECT name FROM players WHERE id = {$match['player1']}")->fetch_assoc()['name'];
-                $player2Name = $conn->query("SELECT name FROM players WHERE id = {$match['player2']}")->fetch_assoc()['name'];
+            <?php
+            $matchesQuery = "SELECT * FROM matches WHERE (player1 = $playerId OR player2 = $playerId) $searchCondition ORDER BY match_date DESC LIMIT $matchesPerPage OFFSET $offset";
+            $matchesResult = $conn->query($matchesQuery);
 
-                // Vérifier si le joueur a gagné
-                if (($match['player1'] == $playerId && $match['score1'] > $match['score2']) || 
-                    ($match['player2'] == $playerId && $match['score2'] > $match['score1'])) {
-                    $rowClass = "table-success"; // Classe pour victoire
-                } else {
-                    $rowClass = "table-danger"; // Classe pour défaite
-                }
-
-                echo "<tr class='{$rowClass}'>
-                    <td>{$match['id']}</td>
-                    <td>{$player1Name}</td>
-                    <td>{$match['score1']}</td>
-                    <td>{$match['score2']}</td>
-                    <td>{$player2Name}</td>
-                    <td>{$match['old_mmr1']}</td>
-                    <td>{$match['new_mmr1']}</td>
-                    <td>{$match['old_mmr2']}</td>
-                    <td>{$match['new_mmr2']}</td>
+            while ($match = $matchesResult->fetch_assoc()) {
+                $opponentId = $match['player1'] == $playerId ? $match['player2'] : $match['player1'];
+                $opponentResult = $conn->query("SELECT name, mmr FROM players WHERE id = $opponentId");
+                $opponent = $opponentResult->fetch_assoc();
+                $score = ($match['player1'] == $playerId) ? "{$match['score1']} - {$match['score2']}" : "{$match['score2']} - {$match['score1']}";
+                $playerOldMMR = $match['player1'] == $playerId ? $match['old_mmr1'] : $match['old_mmr2'];
+                $playerNewMMR = $match['player1'] == $playerId ? $match['new_mmr1'] : $match['new_mmr2'];
+                $opponentOldMMR = $match['player1'] != $playerId ? $match['old_mmr1'] : $match['old_mmr2'];
+                $opponentNewMMR = $match['player1'] != $playerId ? $match['new_mmr1'] : $match['new_mmr2'];
+                $rowColor = ($match['player1'] == $playerId && $match['score1'] > $match['score2']) || ($match['player2'] == $playerId && $match['score2'] > $match['score1']) ? 'table-success' : 'table-danger';
+                echo "<tr class='$rowColor'>
                     <td>{$match['match_date']}</td>
+                    <td>" . htmlspecialchars($opponent['name']) . "</td>
+                    <td>$score</td>
+                    <td>$playerOldMMR → <strong>$playerNewMMR</strong></td>
+                    <td>$opponentOldMMR → <strong>$opponentNewMMR</strong></td>
                 </tr>";
             }
-        }
-        ?>
+            ?>
         </tbody>
     </table>
 
-    <!-- Navigation de la pagination -->
-    <nav aria-label="Page navigation">
-        <div class="d-flex justify-content-between align-items-center">
-            <ul class="pagination">
-                <?php if ($currentPage > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?id=<?php echo $playerId; ?>&page=<?php echo $currentPage - 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>">Précédent</a>
-                    </li>
-                <?php endif; ?>
-
-                <?php
-                // Afficher les numéros de pages avec ellipses
-                $maxDisplayPages = 5; // Nombre maximum de pages à afficher
-
-                // Afficher la première page
-                if ($totalPages > 1) {
-                    echo '<li class="page-item'.($currentPage === 1 ? ' active' : '').'"><a class="page-link" href="?id='.$playerId.'&page=1&matchesPerPage='.$matchesPerPage.'">1</a></li>';
-                }
-
-                // Afficher les ellipses si la page actuelle est au-delà de 3
-                if ($currentPage > 3) {
-                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-
-                // Afficher les pages proches de la page actuelle
-                for ($i = max(2, $currentPage - 1); $i <= min($totalPages - 1, $currentPage + 1); $i++) {
-                    echo '<li class="page-item'.($i === $currentPage ? ' active' : '').'"><a class="page-link" href="?id='.$playerId.'&page='.$i.'&matchesPerPage='.$matchesPerPage.'">'.$i.'</a></li>';
-                }
-
-                // Afficher les ellipses si la page actuelle est près de l'avant-dernière page
-                if ($currentPage < $totalPages - 2) {
-                    echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
-                }
-
-                // Afficher la dernière page
-                if ($totalPages > 1) {
-                    echo '<li class="page-item'.($currentPage === $totalPages ? ' active' : '').'"><a class="page-link" href="?id='.$playerId.'&page='.$totalPages.'&matchesPerPage='.$matchesPerPage.'">'.$totalPages.'</a></li>';
-                }
-                ?>
-
-                <?php if ($currentPage < $totalPages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="?id=<?php echo $playerId; ?>&page=<?php echo $currentPage + 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>">Suivant</a>
-                    </li>
-                <?php endif; ?>
-            </ul>
-            <!-- Formulaire pour sélectionner le nombre d'éléments par page -->
-            <form method="GET" class="mb-3 d-flex align-items-center">
-                <input type="hidden" name="id" value="<?php echo $playerId; ?>"> <!-- Garder l'ID du joueur -->
-                <input type="hidden" name="page" value="<?php echo $currentPage; ?>"> <!-- Garder la page actuelle -->
-                <label for="matchesPerPage" class="me-2">Limitations</label>
-                <select name="matchesPerPage" id="matchesPerPage" class="form-select" onchange="this.form.submit()">
-                    <option value="10" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 10) ? 'selected' : ''; ?>>10</option>
-                    <option value="25" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 25) ? 'selected' : ''; ?>>25</option>
-                    <option value="50" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 50) ? 'selected' : ''; ?>>50</option>
-                    <option value="100" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 100) ? 'selected' : ''; ?>>100</option>
-                    <option value="250" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 250) ? 'selected' : ''; ?>>250</option>
-                    <option value="500" <?php echo (isset($_GET['matchesPerPage']) && $_GET['matchesPerPage'] == 500) ? 'selected' : ''; ?>>500</option>
-                </select>
-            </form>
-        </div>
+    <nav class="d-flex justify-content-between">
+        <ul class="pagination">
+            <?php if ($currentPage > 1): ?>
+                <li class="page-item"><a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage - 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Précédent</a></li>
+            <?php endif; ?>
+            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                <li class="page-item <?php if ($i == $currentPage) echo 'active'; ?>">
+                    <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $i; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>"><?php echo $i; ?></a>
+                </li>
+            <?php endfor; ?>
+            <?php if ($currentPage < $totalPages): ?>
+                <li class="page-item"><a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage + 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Suivant</a></li>
+            <?php endif; ?>
+        </ul>
+        <form class="mb-3" method="GET" action="player_profile.php">
+            <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+            <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
+            <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
+                <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
+                <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
+                <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
+            </select>
+        </form>
     </nav>
-    
-    <a href="index.php" class="btn btn-secondary mt-3">Retour à la liste des joueurs</a>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 </body>
 </html>
