@@ -84,9 +84,15 @@ function getRank($mmr) {
 $new_rank1 = getRank($new_mmr1);
 $new_rank2 = getRank($new_mmr2);
 
+// Définir le fuseau horaire sur Paris
+date_default_timezone_set('Europe/Paris');
+
+// Formater la date au format français
+$match_date = (new DateTime())->format('Y-m-d H:i:s');
+
 // Insérer le match dans la base de données
 $sql = "INSERT INTO matches (player1, player2, score1, score2, observed1, observed2, expected1, expected2, victory_margin, victory_factor, probability1, probability2, old_mmr1, old_mmr2, new_mmr1, new_mmr2, elo_difference, match_date)
-VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$expected1', '$expected2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', NOW())";
+VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$expected1', '$expected2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$match_date')";
 
 if ($conn->query($sql) === TRUE) {
     // Mettre à jour les MMR et les rangs des joueurs
