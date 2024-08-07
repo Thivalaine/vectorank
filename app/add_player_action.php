@@ -3,19 +3,19 @@ include 'db.php';
 
 // Fonction pour déterminer le rang en fonction du MMR
 function getRank($mmr) {
-    if ($mmr >= 5000) {
+    if ($mmr >= 4000) {
         return "Challenger";
-    } elseif ($mmr >= 4000) {
-        return "Grandmaster";
-    } elseif ($mmr >= 3500) {
-        return "Master";
     } elseif ($mmr >= 3000) {
-        return "Diamond";
+        return "Grandmaster";
     } elseif ($mmr >= 2500) {
-        return "Emerald";
+        return "Master";
     } elseif ($mmr >= 2000) {
-        return "Platinum";
+        return "Diamond";
+    } elseif ($mmr >= 1750) {
+        return "Emerald";
     } elseif ($mmr >= 1500) {
+        return "Platinum";
+    } elseif ($mmr >= 1250) {
         return "Gold";
     } elseif ($mmr >= 1000) {
         return "Silver";

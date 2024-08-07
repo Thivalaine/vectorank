@@ -2,15 +2,17 @@ CREATE DATABASE IF NOT EXISTS elo_system;
 
 USE elo_system;
 
--- Création de la table des joueurs
+-- Création de la table des joueurs avec les colonnes pour les séries de victoires
 CREATE TABLE IF NOT EXISTS players (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     mmr INT NOT NULL,
-    rank VARCHAR(20) DEFAULT 'Iron' -- Colonne pour stocker le rang du joueur
+    rank VARCHAR(20) DEFAULT 'Iron', -- Colonne pour stocker le rang du joueur
+    current_win_streak INT DEFAULT 0, -- Colonne pour stocker la série de victoires actuelle
+    best_win_streak INT DEFAULT 0 -- Colonne pour stocker la meilleure série de victoires
 );
 
--- Création de la table des matchs
+-- Création de la table des matchs avec les nouvelles colonnes
 CREATE TABLE IF NOT EXISTS matches (
     id INT AUTO_INCREMENT PRIMARY KEY,
     player1 INT NOT NULL,
@@ -31,6 +33,10 @@ CREATE TABLE IF NOT EXISTS matches (
     new_mmr2 INT NOT NULL,
     elo_difference INT NOT NULL,
     match_date DATETIME DEFAULT CURRENT_TIMESTAMP, -- Colonne pour la date du match
+    points1 INT NOT NULL,
+    points2 INT NOT NULL,
+    win_streak_bonus1 INT NOT NULL,
+    win_streak_bonus2 INT NOT NULL,
     FOREIGN KEY (player1) REFERENCES players(id),
     FOREIGN KEY (player2) REFERENCES players(id)
 );

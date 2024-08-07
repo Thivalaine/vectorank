@@ -70,26 +70,26 @@
         // Si l'ordre est par rang, le MMR doit être calculé dans une sous-requête
         if ($orderBy === 'rank1') {
             $orderByColumn = "(CASE 
-                                WHEN p1.mmr >= 5000 THEN 'Challenger'
-                                WHEN p1.mmr >= 4000 THEN 'Grandmaster'
-                                WHEN p1.mmr >= 3500 THEN 'Master'
-                                WHEN p1.mmr >= 3000 THEN 'Diamond'
-                                WHEN p1.mmr >= 2500 THEN 'Emerald'
-                                WHEN p1.mmr >= 2000 THEN 'Platinum'
-                                WHEN p1.mmr >= 1500 THEN 'Gold'
+                                WHEN p1.mmr >= 4000 THEN 'Challenger'
+                                WHEN p1.mmr >= 3000 THEN 'Grandmaster'
+                                WHEN p1.mmr >= 2500 THEN 'Master'
+                                WHEN p1.mmr >= 2000 THEN 'Diamond'
+                                WHEN p1.mmr >= 1750 THEN 'Emerald'
+                                WHEN p1.mmr >= 1500 THEN 'Platinum'
+                                WHEN p1.mmr >= 1250 THEN 'Gold'
                                 WHEN p1.mmr >= 1000 THEN 'Silver'
                                 WHEN p1.mmr >= 500 THEN 'Bronze'
                                 ELSE 'Iron'
                              END)";
         } elseif ($orderBy === 'rank2') {
             $orderByColumn = "(CASE 
-                                WHEN p2.mmr >= 5000 THEN 'Challenger'
-                                WHEN p2.mmr >= 4000 THEN 'Grandmaster'
-                                WHEN p2.mmr >= 3500 THEN 'Master'
-                                WHEN p2.mmr >= 3000 THEN 'Diamond'
-                                WHEN p2.mmr >= 2500 THEN 'Emerald'
-                                WHEN p2.mmr >= 2000 THEN 'Platinum'
-                                WHEN p2.mmr >= 1500 THEN 'Gold'
+                                WHEN p2.mmr >= 4000 THEN 'Challenger'
+                                WHEN p2.mmr >= 3000 THEN 'Grandmaster'
+                                WHEN p2.mmr >= 2500 THEN 'Master'
+                                WHEN p2.mmr >= 2000 THEN 'Diamond'
+                                WHEN p2.mmr >= 1750 THEN 'Emerald'
+                                WHEN p2.mmr >= 1500 THEN 'Platinum'
+                                WHEN p2.mmr >= 1250 THEN 'Gold'
                                 WHEN p2.mmr >= 1000 THEN 'Silver'
                                 WHEN p2.mmr >= 500 THEN 'Bronze'
                                 ELSE 'Iron'
@@ -131,19 +131,19 @@
 
         // Fonction pour déterminer le rang en fonction du MMR
         function getRank($mmr) {
-            if ($mmr >= 5000) {
+            if ($mmr >= 4000) {
                 return "Challenger";
-            } elseif ($mmr >= 4000) {
-                return "Grandmaster";
-            } elseif ($mmr >= 3500) {
-                return "Master";
             } elseif ($mmr >= 3000) {
-                return "Diamond";
+                return "Grandmaster";
             } elseif ($mmr >= 2500) {
-                return "Emerald";
+                return "Master";
             } elseif ($mmr >= 2000) {
-                return "Platinum";
+                return "Diamond";
+            } elseif ($mmr >= 1750) {
+                return "Emerald";
             } elseif ($mmr >= 1500) {
+                return "Platinum";
+            } elseif ($mmr >= 1250) {
                 return "Gold";
             } elseif ($mmr >= 1000) {
                 return "Silver";

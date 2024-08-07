@@ -57,7 +57,11 @@
 <body>
 <?php include 'navbar.php'; ?>
 <div class="container mt-5">
-    <h1 class="header-title">Liste des joueurs</h1>
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <h1 class="header-title">Liste des joueurs</h1>
+        <a href="add_match.php" class="btn btn-primary">Ajouter un match</a>
+    </div>
+
     <table class="table table-hover table-bordered">
         <thead class="thead-dark">
         <tr>
@@ -73,13 +77,13 @@
         include 'db.php';
         // Modifiez la requête pour trier par MMR
         $result = $conn->query("SELECT *, CASE 
-                    WHEN mmr >= 5000 THEN 'Challenger' 
-                    WHEN mmr >= 4000 THEN 'Grandmaster' 
-                    WHEN mmr >= 3500 THEN 'Master' 
-                    WHEN mmr >= 3000 THEN 'Diamond' 
-                    WHEN mmr >= 2500 THEN 'Emerald' 
-                    WHEN mmr >= 2000 THEN 'Platinum' 
-                    WHEN mmr >= 1500 THEN 'Gold' 
+                    WHEN mmr >= 4000 THEN 'Challenger' 
+                    WHEN mmr >= 3000 THEN 'Grandmaster' 
+                    WHEN mmr >= 2500 THEN 'Master' 
+                    WHEN mmr >= 2000 THEN 'Diamond' 
+                    WHEN mmr >= 1750 THEN 'Emerald' 
+                    WHEN mmr >= 1500 THEN 'Platinum' 
+                    WHEN mmr >= 1250 THEN 'Gold' 
                     WHEN mmr >= 1000 THEN 'Silver' 
                     WHEN mmr >= 500 THEN 'Bronze' 
                     ELSE 'Iron' 
@@ -108,73 +112,84 @@
     <div class="collapse collapse-content" id="mmrDetails">
         <div class="card card-body">
             <h2>Calcul du MMR</h2>
-            <p>Le MMR (Matchmaking Rating) est calculé en fonction des résultats des matchs et de la différence de MMR entre les joueurs.</p>
+            <p>Le MMR (Matchmaking Rating) est calculé en fonction des résultats des matchs et de la différence de MMR entre les joueurs. Voici comment cela fonctionne :</p>
             <h3>Étapes de calcul du MMR</h3>
             <ol>
-                <li>**Récupération des MMR actuels des joueurs** :
+                <li><strong>Récupération des MMR actuels des joueurs</strong> :
                     <ul>
                         <li>Ancien MMR du joueur 1 : <code>$old_mmr1</code></li>
                         <li>Ancien MMR du joueur 2 : <code>$old_mmr2</code></li>
                     </ul>
                 </li>
-                <li>**Détermination des valeurs observées** :
+                <li><strong>Détermination des valeurs observées</strong> :
                     <ul>
-                        <li>Joueur 1 gagne : <code>$observed1 = 1</code></li>
-                        <li>Joueur 1 perd : <code>$observed1 = 0</code></li>
-                        <li>Joueur 2 gagne : <code>$observed2 = 1</code></li>
-                        <li>Joueur 2 perd : <code>$observed2 = 0</code></li>
+                        <li>Si le joueur 1 gagne : <code>$observed1 = 1</code></li>
+                        <li>Si le joueur 1 perd : <code>$observed1 = 0</code></li>
+                        <li>Si le joueur 2 gagne : <code>$observed2 = 1</code></li>
+                        <li>Si le joueur 2 perd : <code>$observed2 = 0</code></li>
                     </ul>
                 </li>
-                <li>**Calcul des probabilités de victoire** :
+                <li><strong>Calcul des probabilités de victoire</strong> :
                     <ul>
                         <li>Probabilité de victoire du joueur 1 : <code>$probability1 = 1 / (1 + 10 ^ (($old_mmr2 - $old_mmr1) / 400))</code></li>
                         <li>Probabilité de victoire du joueur 2 : <code>$probability2 = 1 / (1 + 10 ^ (($old_mmr1 - $old_mmr2) / 400))</code></li>
                     </ul>
                 </li>
-                <li>**Calcul des valeurs attendues** :
+                <li><strong>Calcul des valeurs attendues</strong> :
                     <ul>
                         <li>Valeur attendue pour le joueur 1 : <code>$expected1 = 0.5</code></li>
                         <li>Valeur attendue pour le joueur 2 : <code>$expected2 = 0.5</code></li>
                     </ul>
                 </li>
-                <li>**Marge de victoire** :
+                <li><strong>Marge de victoire</strong> :
                     <ul>
                         <li>Marge de victoire : <code>$victory_margin = abs($score1 - $score2)</code></li>
                     </ul>
                 </li>
-                <li>**Facteur de victoire** :
+                <li><strong>Facteur de victoire</strong> :
                     <ul>
                         <li>Facteur de victoire : <code>$victory_factor = 1 + ($victory_margin / 10)</code></li>
                     </ul>
                 </li>
-                <li>**Points supplémentaires** :
+                <li><strong>Points supplémentaires</strong> :
                     <ul>
                         <li>Points supplémentaires : <code>$extra_points = $victory_margin</code></li>
                     </ul>
                 </li>
-                <li>**Calcul des nouveaux MMR** :
+                <li><strong>Calcul des nouveaux MMR</strong> :
                     <ul>
-                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points)</code></li>
+                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points + $bonusPoints1)</code></li>
                         <li>Si le joueur 1 perd : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $extra_points)</code></li>
-                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points)</code></li>
+                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points + $bonusPoints2)</code></li>
                         <li>Si le joueur 2 perd : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $extra_points)</code></li>
                     </ul>
                 </li>
             </ol>
 
+            <h2>Séries de victoires (Win Streaks)</h2>
+            <p>Une série de victoires (win streak) est définie comme une série consécutive de matchs gagnés par un joueur. Les win streaks affectent les calculs de MMR de manière significative :</p>
+            <strong>Pour chaque victoire consécutive, le joueur peut recevoir un bonus supplémentaire de points comme suit :</strong>
+            <ul>
+                <li>1 point pour une série de victoires < 5</li>
+                <li>2 points pour une série de victoires < 10</li>
+                <li>3 points pour une série de victoires < 15</li>
+                <li>4 points pour une série de victoires < 20</li>
+                <li>5 points pour une série de victoires > 20</li>
+            </ul>
+
             <h2>Rangs</h2>
             <p>Les rangs sont attribués en fonction du MMR comme suit :</p>
             <ul>
-                <li><img src="assets/Challenger.svg" alt="Challenger"> Challenger: MMR >= 5000</li>
-                <li><img src="assets/Grandmaster.svg" alt="Grandmaster"> Grandmaster: MMR >= 4000</li>
-                <li><img src="assets/Master.svg" alt="Master"> Master: MMR >= 3500</li>
-                <li><img src="assets/Diamond.svg" alt="Diamond"> Diamond: MMR >= 3000</li>
-                <li><img src="assets/Emerald.svg" alt="Emerald"> Emerald: MMR >= 2500</li>
-                <li><img src="assets/Platinum.svg" alt="Platinum"> Platinum: MMR >= 2000</li>
-                <li><img src="assets/Gold.svg" alt="Gold"> Gold: MMR >= 1500</li>
+                <li><img src="assets/Challenger.svg" alt="Challenger"> Challenger: MMR >= 4000</li>
+                <li><img src="assets/Grandmaster.svg" alt="Grandmaster"> Grandmaster: MMR >= 3000</li>
+                <li><img src="assets/Master.svg" alt="Master"> Master: MMR >= 2500</li>
+                <li><img src="assets/Diamond.svg" alt="Diamond"> Diamond: MMR >= 2000</li>
+                <li><img src="assets/Emerald.svg" alt="Emerald"> Emerald: MMR >= 1750</li>
+                <li><img src="assets/Platinum.svg" alt="Platinum"> Platinum: MMR >= 1500</li>
+                <li><img src="assets/Gold.svg" alt="Gold"> Gold: MMR >= 1250</li>
                 <li><img src="assets/Silver.svg" alt="Silver"> Silver: MMR >= 1000</li>
                 <li><img src="assets/Bronze.svg" alt="Bronze"> Bronze: MMR >= 500</li>
-                <li><img src="assets/Iron.svg" alt="Iron"> Iron: MMR < 500</li>
+                <li><img src="assets/Iron.svg" alt="Iron"> Iron: MMR &lt; 500</li>
             </ul>
         </div>
     </div>
