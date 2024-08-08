@@ -113,7 +113,7 @@
                             <i class="fas fa-trophy"></i> 
                             <strong>Ratio V/D :</strong> 
                             <?php 
-                                echo $winsCount . '/' . $lossesCount . ", " . number_format($winRatio, 2) . '%'; 
+                                echo $winsCount . '/' . $lossesCount; 
                             ?>
                         </li>
                         <li class="list-group-item"><strong><i class="fas fa-percent"></i> Pourcentage de victoires :</strong> <?php echo number_format($winRatio, 2) . '%'; ?></li>
