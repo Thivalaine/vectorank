@@ -13,8 +13,8 @@ if ($player1 == $player2) {
 }
 
 // Récupérer les MMR et les séries de victoires actuelles des joueurs
-$result1 = $conn->query("SELECT mmr, current_win_streak, best_win_streak FROM players WHERE id = $player1");
-$result2 = $conn->query("SELECT mmr, current_win_streak, best_win_streak FROM players WHERE id = $player2");
+$result1 = $conn->query("SELECT * FROM players WHERE id = $player1");
+$result2 = $conn->query("SELECT * FROM players WHERE id = $player2");
 
 if ($result1->num_rows > 0 && $result2->num_rows > 0) {
     $data1 = $result1->fetch_assoc();
@@ -141,8 +141,11 @@ VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2'
 
 if ($conn->query($sql) === TRUE) {
     // Mettre à jour les MMR, les rangs et les séries de victoires des joueurs
-    $conn->query("UPDATE players SET mmr = $new_mmr1, rank = '$new_rank1', current_win_streak = $new_current_win_streak1, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak1) WHERE id = $player1");
-    $conn->query("UPDATE players SET mmr = $new_mmr2, rank = '$new_rank2', current_win_streak = $new_current_win_streak2, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak2) WHERE id = $player2");
+    $updatePlayer1 = "UPDATE players SET mmr = $new_mmr1, rank = '$new_rank1', current_win_streak = $new_current_win_streak1, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak1), best_mmr = GREATEST(best_mmr, $new_mmr1) WHERE id = $player1";
+    $updatePlayer2 = "UPDATE players SET mmr = $new_mmr2, rank = '$new_rank2', current_win_streak = $new_current_win_streak2, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak2), best_mmr = GREATEST(best_mmr, $new_mmr2) WHERE id = $player2";
+
+    $conn->query($updatePlayer1);
+    $conn->query($updatePlayer2);
 
     header("Location: index.php");
 } else {

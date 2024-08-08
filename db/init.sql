@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS players (
     rank VARCHAR(20) DEFAULT 'Iron', -- Colonne pour stocker le rang du joueur
     current_win_streak INT DEFAULT 0, -- Colonne pour stocker la série de victoires actuelle
     best_win_streak INT DEFAULT 0 -- Colonne pour stocker la meilleure série de victoires
+    best_mmr INT DEFAULT 0; -- Colonne pour stocker le meilleur MMR du joueur
 );
 
 -- Création de la table des matchs avec les nouvelles colonnes

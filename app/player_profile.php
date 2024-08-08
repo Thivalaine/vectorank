@@ -36,6 +36,13 @@
     $lossesResult = $conn->query("SELECT COUNT(*) as losses FROM matches WHERE (player1 = $playerId AND score1 < score2) OR (player2 = $playerId AND score2 < score1)");
     $lossesCount = $lossesResult ? $lossesResult->fetch_assoc()['losses'] : 0;
 
+    // Compter les buts marqués et encaissés
+    $goalsScoredResult = $conn->query("SELECT SUM(CASE WHEN player1 = $playerId THEN score1 ELSE score2 END) as goals_scored FROM matches WHERE player1 = $playerId OR player2 = $playerId");
+    $goalsScored = $goalsScoredResult ? $goalsScoredResult->fetch_assoc()['goals_scored'] : 0;
+
+    $goalsConcededResult = $conn->query("SELECT SUM(CASE WHEN player1 = $playerId THEN score2 ELSE score1 END) as goals_conceded FROM matches WHERE player1 = $playerId OR player2 = $playerId");
+    $goalsConceded = $goalsConcededResult ? $goalsConcededResult->fetch_assoc()['goals_conceded'] : 0;
+
     // Calculer le ratio
     $totalGames = $winsCount + $lossesCount;
     $winRatio = $totalGames > 0 ? ($winsCount / $totalGames) * 100 : 0;
@@ -98,15 +105,32 @@
     <div class="card mb-4">
         <div class="card-body">
             <h5 class="card-title">Statistiques</h5>
-            <ul class="list-group">
-                <li class="list-group-item"><i class="fas fa-trophy"></i> <strong>Victoire(s):</strong> <?php echo $winsCount; ?></li>
-                <li class="list-group-item"><i class="fas fa-times-circle"></i> <strong>Défaite(s):</strong> <?php echo $lossesCount; ?></li>
-                <li class="list-group-item"><i class="fas fa-chart-pie"></i> <strong>Ratio de victoires:</strong> <?php echo number_format($winRatio, 2) . '%'; ?></li>
-                <li class="list-group-item"><i class="fas fa-futbol"></i> <strong>Matchs disputés:</strong> <?php echo $totalGames; ?></li>
-                <li class="list-group-item"><i class="fas fa-star"></i> <strong>Plus Grande Série de victoires:</strong> <?php echo $player['best_win_streak']; ?></li>
-                <li class="list-group-item"><i class="fas fa-user-friends"></i> <strong>L'Opposant à éviter :</strong> <?php echo htmlspecialchars($mostLostAgainstName); ?></li>
-                <li class="list-group-item"><i class="fas fa-user-check"></i> <strong>L'Opposant favori :</strong> <?php echo htmlspecialchars($mostWonAgainstName); ?></li>
-            </ul>
+            <div class="row">
+                <div class="col-md-6">
+                    <ul class="list-group">
+                        <li class="list-group-item"><i class="fas fa-futbol"></i> <strong>Matchs disputés:</strong> <?php echo $totalGames; ?></li>
+                        <li class="list-group-item">
+                            <i class="fas fa-trophy"></i> 
+                            <strong>Ratio V/D :</strong> 
+                            <?php 
+                                echo $winsCount . '/' . $lossesCount . ", " . number_format($winRatio, 2) . '%'; 
+                            ?>
+                        </li>
+                        <li class="list-group-item"><strong><i class="fas fa-percent"></i> Pourcentage de victoires :</strong> <?php echo number_format($winRatio, 2) . '%'; ?></li>
+                        <li class="list-group-item"><i class="fas fas fa-fire"></i> <strong>WS Actuel :</strong> <?php echo $player['current_win_streak']; ?></li>
+                        <li class="list-group-item"><i class="fas fa-star"></i> <strong>Plus Grande Série de victoires:</strong> <?php echo $player['best_win_streak']; ?></li>
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-group">
+                        <li class="list-group-item"><i class="fas fa-arrow-up"></i> <strong>Buts Marqués:</strong> <?php echo $goalsScored; ?></li>
+                        <li class="list-group-item"><i class="fas fa-arrow-down"></i> <strong>Buts Encaissés:</strong> <?php echo $goalsConceded; ?></li>
+                        <li class="list-group-item"><i class="fas fa-user-friends"></i> <strong>L'Opposant à éviter :</strong> <?php echo htmlspecialchars($mostLostAgainstName); ?></li>
+                        <li class="list-group-item"><i class="fas fa-user-check"></i> <strong>L'Opposant favori :</strong> <?php echo htmlspecialchars($mostWonAgainstName); ?></li>
+                        <li class="list-group-item"><i class="fas fa-chart-line"></i> <strong>Meilleur MMR :</strong> <?php echo $player['best_mmr']; ?></li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -214,32 +238,68 @@
     </tbody>
 </table>
 
+<nav class="d-flex justify-content-between">
+    <ul class="pagination">
+        <?php if ($currentPage > 1): ?>
+            <li class="page-item">
+                <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage - 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Précédent</a>
+            </li>
+        <?php endif; ?>
 
+        <?php
+        // Afficher la première page
+        if ($totalPages > 1) {
+            echo '<li class="page-item ' . ($currentPage == 1 ? 'active' : '') . '">
+                    <a class="page-link" href="player_profile.php?id=' . $playerId . '&page=1&matchesPerPage=' . $matchesPerPage . '&search=' . htmlspecialchars($searchQuery) . '">1</a>
+                  </li>';
+        }
 
-    <nav class="d-flex justify-content-between">
-        <ul class="pagination">
-            <?php if ($currentPage > 1): ?>
-                <li class="page-item"><a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage - 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Précédent</a></li>
-            <?php endif; ?>
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <li class="page-item <?php if ($i == $currentPage) echo 'active'; ?>">
-                    <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $i; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>"><?php echo $i; ?></a>
-                </li>
-            <?php endfor; ?>
-            <?php if ($currentPage < $totalPages): ?>
-                <li class="page-item"><a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage + 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Suivant</a></li>
-            <?php endif; ?>
-        </ul>
-        <form class="mb-3" method="GET" action="player_profile.php">
-            <input type="hidden" name="id" value="<?php echo $playerId; ?>">
-            <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
-            <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
-                <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
-                <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
-                <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
-            </select>
-        </form>
-    </nav>
+        // Afficher les ellipses si nécessaire
+        if ($currentPage > 3) {
+            echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+
+        // Calculer les pages à afficher autour de la page actuelle
+        $startPage = max(2, $currentPage - 1); // page précédente
+        $endPage = min($totalPages - 1, $currentPage + 1); // page suivante
+
+        for ($i = $startPage; $i <= $endPage; $i++): ?>
+            <li class="page-item <?php if ($i == $currentPage) echo 'active'; ?>">
+                <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $i; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>"><?php echo $i; ?></a>
+            </li>
+        <?php endfor; ?>
+
+        <?php
+        // Afficher les ellipses si nécessaire
+        if ($currentPage < $totalPages - 2) {
+            echo '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+
+        // Afficher la dernière page
+        if ($totalPages > 1) {
+            echo '<li class="page-item ' . ($currentPage == $totalPages ? 'active' : '') . '">
+                    <a class="page-link" href="player_profile.php?id=' . $playerId . '&page=' . $totalPages . '&matchesPerPage=' . $matchesPerPage . '&search=' . htmlspecialchars($searchQuery) . '">' . $totalPages . '</a>
+                  </li>';
+        }
+        ?>
+
+        <?php if ($currentPage < $totalPages): ?>
+            <li class="page-item">
+                <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage + 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Suivant</a>
+            </li>
+        <?php endif; ?>
+    </ul>
+
+    <form class="mb-3" method="GET" action="player_profile.php">
+        <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+        <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
+        <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
+            <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
+            <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
+            <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
+        </select>
+    </form>
+</nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
