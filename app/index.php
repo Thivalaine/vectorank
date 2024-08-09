@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Liste des joueurs</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style>
@@ -99,7 +100,7 @@
                     <img class='rank-img' src='assets/{$row['rank']}.svg' alt='{$row['rank']}' onerror='handleImageError(this)' />
                     <span class='rank-text'>{$row['rank']}</span>
                 </td>
-                <td><a href='player_profile.php?id={$row['id']}' class='btn btn-info'>Voir le profil</a></td>
+                <td><a href='player_profile.php?id={$row['id']}' class='btn btn-info'><i class='fa-regular fa-address-card'></i></a></td>
             </tr>";
         }
         $conn->close();
