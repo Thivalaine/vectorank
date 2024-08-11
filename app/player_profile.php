@@ -341,6 +341,10 @@
                 $opponentName = $isPlayer1 ? $match['player2_name'] : $match['player1_name'];
                 $score = $isPlayer1 ? "{$match['score1']} - {$match['score2']}" : "{$match['score2']} - {$match['score1']}";
                 $rowColor = ($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1']) ? 'table-success' : 'table-danger';
+                $playerOldMMR = $isPlayer1 ? $match['old_mmr1'] : $match['old_mmr2'];
+                $playerNewMMR = $isPlayer1 ? $match['new_mmr1'] : $match['new_mmr2'];
+                $opponentOldMMR = $isPlayer1 ? $match['old_mmr2'] : $match['old_mmr1'];
+                $opponentNewMMR = $isPlayer1 ? $match['new_mmr2'] : $match['new_mmr1'];
             
                 // Afficher les points et les bonus de séries de victoires pour le joueur
                 $pointsDisplayPlayer = '';
@@ -361,7 +365,7 @@
                     }
                     $pointsDisplayOpponent .= ")";
                 }
-
+            
                 // Ajouter les points du vainqueur ou du perdant pour le joueur
                 if ($isPlayer1) {
                     $pointsDisplayPlayer .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
@@ -370,11 +374,11 @@
                     $pointsDisplayPlayer .= $match['score2'] > $match['score1'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
                     $pointsDisplayOpponent .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
                 }
-
+            
                 // Ne rien afficher si les points sont nuls
                 $pointsDisplayPlayer = $pointsDisplayPlayer ?: '';
                 $pointsDisplayOpponent = $pointsDisplayOpponent ?: '';
-            
+                
                 // Déterminer si le joueur est en série de victoires
                 if (($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1'])) {
                     $winStreak++;
@@ -387,18 +391,19 @@
                 // Afficher la série de victoires dans la colonne correspondante
                 $winStreakDisplay = $winStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $winStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
                 $opponentWinStreakDisplay = $opponentWinStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $opponentWinStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
-
+            
                 echo "<tr class='$rowColor'>
                     <td>{$match['match_date']}</td>
                     <td>" . htmlspecialchars($opponentName) . "</td>
                     <td>$score</td>
-                    <td>" . ($isPlayer1 ? $match['player_old_mmr'] : $match['opponent_old_mmr']) . " → <strong>" . ($isPlayer1 ? $match['player_new_mmr'] : $match['opponent_new_mmr']) . "</strong> <span>$pointsDisplayPlayer</span></td>
-                    <td>" . ($isPlayer1 ? $match['opponent_old_mmr'] : $match['player_old_mmr']) . " → <strong>" . ($isPlayer1 ? $match['opponent_new_mmr'] : $match['player_new_mmr']) . "</strong> <span>$pointsDisplayOpponent</span></td>
+                    <td>$playerOldMMR → <strong>$playerNewMMR</strong> <span>$pointsDisplayPlayer</span></td>
+                    <td>$opponentOldMMR → <strong>$opponentNewMMR</strong> <span>$pointsDisplayOpponent</span></td>
                     <td>" . htmlspecialchars($match['tournament_name'] ?? 'Aucun') . "</td>
                     <td>$winStreakDisplay / $opponentWinStreakDisplay</td> <!-- Affichage de la série de victoires -->
                     <td><a href='tournament_detail.php?id={$match['tournament_id']}' class='btn btn-primary btn-sm'><i class='fa-solid fa-circle-info'></i></a></td>
                 </tr>";
             }
+            
             ?>
         </tbody>
     </table>
