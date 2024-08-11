@@ -24,6 +24,15 @@
             <li><a class="dropdown-item" href="add_player.php">Ajouter un joueur</a></li>
           </ul>
         </li>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            Tournois
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="tournament_list.php">Liste des tournois</a></li>
+            <li><a class="dropdown-item" href="tournaments.php">Ajouter un tournoi</a></li>
+          </ul>
+        </li>
       </ul>
       <form class="d-flex" role="search">
         <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">

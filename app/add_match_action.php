@@ -6,6 +6,7 @@ $player1 = $_POST['player1'];
 $player2 = $_POST['player2'];
 $score1 = $_POST['score1'];
 $score2 = $_POST['score2'];
+$tournament_id = isset($_POST['tournament_id']) ? $_POST['tournament_id'] : null; // Récupérer l'ID du tournoi
 
 // Vérifier que les joueurs sont différents
 if ($player1 == $player2) {
@@ -28,7 +29,7 @@ if ($result1->num_rows > 0 && $result2->num_rows > 0) {
     die("Erreur: Joueur non trouvé.");
 }
 
-// Calculer les autres valeurs nécessaires
+// Calculer les résultats
 $observed1 = $score1 > $score2 ? 1 : 0;
 $observed2 = $score1 < $score2 ? 1 : 0;
 
@@ -52,39 +53,43 @@ $extra_points = $victory_margin;
 // Fonction pour calculer les points bonus basés sur la série de victoires
 function calculateBonusPoints($current_streak) {
     if ($current_streak < 5) {
-        return 1; // +1 point pour une série de victoires < 5
+        return 1;
     } elseif ($current_streak < 10) {
-        return 2; // +2 points pour une série de victoires < 10
+        return 2;
     } elseif ($current_streak < 15) {
-        return 3; // +3 points pour une série de victoires < 15
+        return 3;
     } elseif ($current_streak < 20) {
-        return 4; // +4 points pour une série de victoires < 20
+        return 4;
     } else {
-        return 5; // +5 points pour une série de victoires > 20
+        return 5;
     }
 }
 
-// Calculer les nouveaux MMR avec l'arrondi supérieur et asymétrique
+// Calculer les nouveaux MMR
 if ($score1 > $score2) {
     $bonusPoints1 = calculateBonusPoints($current_win_streak1);
-    $bonusPoints2 = 0; // Pas de points bonus pour le perdant
+    $bonusPoints2 = 0;
 
-    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points + $bonusPoints1);
-    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $extra_points);
+    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $victory_margin + $bonusPoints1);
+    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $victory_margin);
     
-    // Mettre à jour la série de victoires pour le joueur 1
+    // Mettre à jour la série de victoires
     $new_current_win_streak1 = $current_win_streak1 + 1;
-    $new_current_win_streak2 = 0; // Réinitialiser la série de victoires pour le joueur 2
+    $new_current_win_streak2 = 0;
+    $winner = $player1; // Le joueur 1 est le gagnant
+    $loser = $player2; // Le joueur 2 est le perdant
 } else {
-    $bonusPoints1 = 0; // Pas de points bonus pour le perdant
+    $bonusPoints1 = 0;
     $bonusPoints2 = calculateBonusPoints($current_win_streak2);
 
-    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $extra_points);
-    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points + $bonusPoints2);
+    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $victory_margin);
+    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $victory_margin + $bonusPoints2);
     
-    // Mettre à jour la série de victoires pour le joueur 2
+    // Mettre à jour la série de victoires
+    $new_current_win_streak1 = 0;
     $new_current_win_streak2 = $current_win_streak2 + 1;
-    $new_current_win_streak1 = 0; // Réinitialiser la série de victoires pour le joueur 1
+    $winner = $player2; // Le joueur 2 est le gagnant
+    $loser = $player1; // Le joueur 1 est le perdant
 }
 
 // Points gagnés ou perdus (sans les bonus)
@@ -92,44 +97,29 @@ $points1 = $new_mmr1 - $old_mmr1;
 $points2 = $new_mmr2 - $old_mmr2;
 
 // Ajouter les points bonus au nouveau MMR
-if ($score1 > $score2) {
-    $new_mmr1 += $bonusPoints1; // Ajout des points bonus pour le joueur 1
-} else {
-    $new_mmr2 += $bonusPoints2; // Ajout des points bonus pour le joueur 2
-}
+$new_mmr1 += $bonusPoints1;
+$new_mmr2 += $bonusPoints2;
 
 // Calculer la différence ELO
 $elo_difference = abs($old_mmr1 - $old_mmr2);
 
-// Déterminer les nouveaux rangs en fonction des nouveaux MMR
+// Déterminer les nouveaux rangs
 function getRank($mmr) {
-    if ($mmr >= 4000) {
-        return "Challenger";
-    } elseif ($mmr >= 3000) {
-        return "Grandmaster";
-    } elseif ($mmr >= 2500) {
-        return "Master";
-    } elseif ($mmr >= 2000) {
-        return "Diamond";
-    } elseif ($mmr >= 1750) {
-        return "Emerald";
-    } elseif ($mmr >= 1500) {
-        return "Platinum";
-    } elseif ($mmr >= 1250) {
-        return "Gold";
-    } elseif ($mmr >= 1000) {
-        return "Silver";
-    } elseif ($mmr >= 500) {
-        return "Bronze";
-    } else {
-        return "Iron";
-    }
+    if ($mmr >= 4000) return "Challenger";
+    if ($mmr >= 3000) return "Grandmaster";
+    if ($mmr >= 2500) return "Master";
+    if ($mmr >= 2000) return "Diamond";
+    if ($mmr >= 1750) return "Emerald";
+    if ($mmr >= 1500) return "Platinum";
+    if ($mmr >= 1250) return "Gold";
+    if ($mmr >= 1000) return "Silver";
+    if ($mmr >= 500) return "Bronze";
 }
 
 $new_rank1 = getRank($new_mmr1);
 $new_rank2 = getRank($new_mmr2);
 
-// Définir le fuseau horaire sur Paris
+// Définir le fuseau horaire
 date_default_timezone_set('Europe/Paris');
 
 // Formater la date au format français
@@ -148,6 +138,7 @@ if ($conn->query($sql) === TRUE) {
     $conn->query($updatePlayer2);
 
     header("Location: index.php");
+    exit(); // Arrêter l'exécution après la redirection
 } else {
     echo "Erreur : " . $sql . "<br>" . $conn->error;
 }

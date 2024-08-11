@@ -21,7 +21,6 @@
                 while ($row = $result->fetch_assoc()) {
                     echo "<option value='{$row['id']}'>{$row['name']}</option>";
                 }
-                $conn->close();
                 ?>
             </select>
         </div>
@@ -29,12 +28,10 @@
             <label for="player2">Joueur 2</label>
             <select class="form-control" id="player2" name="player2" required>
                 <?php
-                include 'db.php';
-                $result = $conn->query("SELECT * FROM players");
+                $result->data_seek(0); // Remise à zéro du pointeur de résultats
                 while ($row = $result->fetch_assoc()) {
                     echo "<option value='{$row['id']}'>{$row['name']}</option>";
                 }
-                $conn->close();
                 ?>
             </select>
         </div>
