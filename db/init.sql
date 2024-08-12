@@ -7,10 +7,13 @@ CREATE TABLE IF NOT EXISTS players (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     mmr INT NOT NULL,
+    old_mmr INT NOT NULL,
     rank VARCHAR(20) DEFAULT 'Silver', -- Colonne pour stocker le rang du joueur
     current_win_streak INT DEFAULT 0, -- Colonne pour stocker la série de victoires actuelle
     best_win_streak INT DEFAULT 0, -- Colonne pour stocker la meilleure série de victoires
     best_mmr INT DEFAULT 0 -- Colonne pour stocker le meilleur MMR du joueur
+    new_ranking INT(11) NOT NULL DEFAULT 0, -- Colonne pour le nouveau classement
+    old_ranking INT(11) NOT NULL DEFAULT 0 -- Colonne pour l'ancien classement
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (

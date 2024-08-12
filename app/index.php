@@ -64,49 +64,108 @@
         <a href="add_match.php" class="btn btn-primary">Ajouter un match</a>
     </div>
 
-    <table class="table table-hover table-bordered">
-        <thead class="thead-dark">
-        <tr>
-            <th>ID</th>
-            <th>Nom</th>
-            <th>MMR Actuel</th>
-            <th>Rang Actuel</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php
-        include 'db.php';
-        // Modifiez la requête pour trier par MMR
-        $result = $conn->query("SELECT *, CASE 
-                    WHEN mmr >= 4000 THEN 'Challenger' 
-                    WHEN mmr >= 3000 THEN 'Grandmaster' 
-                    WHEN mmr >= 2500 THEN 'Master' 
-                    WHEN mmr >= 2000 THEN 'Diamond' 
-                    WHEN mmr >= 1750 THEN 'Emerald' 
-                    WHEN mmr >= 1500 THEN 'Platinum' 
-                    WHEN mmr >= 1250 THEN 'Gold' 
-                    WHEN mmr >= 1000 THEN 'Silver' 
-                    WHEN mmr >= 500 THEN 'Bronze' 
-                    ELSE 'Iron' 
-                END AS rank FROM players ORDER BY mmr DESC");
+    <div class="table-responsive">
+        <table class="table table-hover table-bordered">
+            <thead class="thead-dark">
+            <tr>
+                <th>Classement</th>
+                <th>Nom</th>
+                <th>MMR Actuel</th>
+                <th>Rang Actuel</th>
+                <th>Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+            include 'db.php';
+            // Modifiez la requête pour trier par MMR
+            $result = $conn->query("SELECT *, CASE 
+                        WHEN mmr >= 4000 THEN 'Challenger' 
+                        WHEN mmr >= 3000 THEN 'Grandmaster' 
+                        WHEN mmr >= 2500 THEN 'Master' 
+                        WHEN mmr >= 2000 THEN 'Diamond' 
+                        WHEN mmr >= 1750 THEN 'Emerald' 
+                        WHEN mmr >= 1500 THEN 'Platinum' 
+                        WHEN mmr >= 1250 THEN 'Gold' 
+                        WHEN mmr >= 1000 THEN 'Silver' 
+                        WHEN mmr >= 500 THEN 'Bronze' 
+                        ELSE 'Iron' 
+                    END AS rank FROM players ORDER BY mmr DESC");
 
-        while ($row = $result->fetch_assoc()) {
-            echo "<tr>
-                <td>{$row['id']}</td>
-                <td>{$row['name']}</td>
-                <td>{$row['mmr']}</td>
-                <td>
-                    <img class='rank-img' src='assets/{$row['rank']}.svg' alt='{$row['rank']}' onerror='handleImageError(this)' />
-                    <span class='rank-text'>{$row['rank']}</span>
-                </td>
-                <td><a href='player_profile.php?id={$row['id']}' class='btn btn-info'><i class='fa-regular fa-address-card'></i></a></td>
-            </tr>";
-        }
-        $conn->close();
-        ?>
-        </tbody>
-    </table>
+            while ($row = $result->fetch_assoc()) {
+                // Calcul de la différence de MMR
+                $mmrDifference = $row['mmr'] - $row['old_mmr'];
+                $trendIcon = '';
+                $trendBadgeClass = ''; // Classe de base pour le badge
+                $formattedDifference = '';
+
+                // Vérification des différences
+                if (!is_null($row['old_mmr']) && !is_null($row['mmr'])) {
+                    if ($mmrDifference > 0) {
+                        $trendIcon = '<i class="fas fa-arrow-up"></i>';
+                        $trendBadgeClass = 'badge bg-success'; // Badge vert pour montante
+                        $formattedDifference = "+$mmrDifference"; // Différence positive avec un signe +
+                    } elseif ($mmrDifference < 0) {
+                        $trendIcon = '<i class="fas fa-arrow-down"></i>';
+                        $trendBadgeClass = 'badge bg-danger'; // Badge rouge pour descendante
+                        $formattedDifference = "$mmrDifference"; // Différence négative sans le signe
+                    }
+                }
+
+                // Préparation de l'affichage de MMR
+                $mmrDisplay = "{$row['mmr']}"; // Valeur par défaut
+                // Vérification si MMR actuel n'est pas égal à l'ancien MMR
+                if ($mmrDifference !== 0 && intval($mmrDifference) !== intval($row['mmr'])) { // Afficher le badge seulement si la différence est non nulle
+                    $mmrDisplay .= " <span class='$trendBadgeClass'>$trendIcon $formattedDifference</span>";
+                }
+
+                // Calcul de la différence de classement
+                if (is_null($row['old_ranking']) || is_null($row['new_ranking'])) {
+                    $rankingDisplay = "{$row['new_ranking']}"; // Pas d'affichage de badge si l'un des classements est nul
+                } else {
+                    $rankingDifference = $row['new_ranking'] - $row['old_ranking'];
+
+                    if ($rankingDifference < 0) { // Si old_ranking est supérieur à new_ranking
+                        $rankingTrendIcon = '<i class="fas fa-arrow-up"></i>'; // Icône pour un gain de classement
+                        $rankingBadgeClass = 'badge bg-success'; // Badge vert pour un gain
+                        $formattedRankingDifference = "+".abs($rankingDifference); // Affichage avec signe + et valeur positive
+                    } elseif ($rankingDifference > 0) { // Si old_ranking est inférieur à new_ranking
+                        $rankingTrendIcon = '<i class="fas fa-arrow-down"></i>'; // Icône pour une perte de classement
+                        $rankingBadgeClass = 'badge bg-danger'; // Badge rouge pour une perte
+                        $formattedRankingDifference = "-".abs($rankingDifference); // Affichage sans signe
+                    } else {
+                        $rankingTrendIcon = ''; // Aucun changement
+                        $rankingBadgeClass = ''; // Pas de badge
+                        $formattedRankingDifference = ''; // Pas d'affichage
+                    }
+
+                    // Préparation de la cellule de classement
+                    $rankingDisplay = "{$row['new_ranking']}"; // Valeur par défaut
+                    // Afficher le badge seulement si la différence est non nulle
+                    if ($rankingDifference !== 0 && intval($rankingDifference) !== intval($row['new_ranking'])) {
+                        $rankingDisplay .= " <span class='$rankingBadgeClass'>$rankingTrendIcon $formattedRankingDifference</span>";
+                    }
+                }
+
+
+                    // Affichage des données avec l'icône de tendance et le badge de différence de MMR et de classement
+                    echo "<tr>
+                        <td>$rankingDisplay</td>
+                        <td>{$row['name']}</td>
+                        <td>$mmrDisplay</td>
+                        <td>
+                            <img class='rank-img' src='assets/{$row['rank']}.svg' alt='{$row['rank']}' onerror='handleImageError(this)' />
+                            <span class='rank-text'>{$row['rank']}</span>
+                        </td>
+                        <td><a href='player_profile.php?id={$row['id']}' class='btn btn-info'><i class='fa-regular fa-address-card'></i></a></td>
+                    </tr>";
+                }
+
+            $conn->close();
+            ?>
+            </tbody>
+        </table>
+    </div>
 
     <button class="btn btn-secondary mt-3" type="button" data-bs-toggle="collapse" data-bs-target="#mmrDetails" aria-expanded="false" aria-controls="mmrDetails">
         Détails du calcul du MMR et des rangs

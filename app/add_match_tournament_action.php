@@ -26,6 +26,8 @@ if ($result1->num_rows > 0 && $result2->num_rows > 0) {
     $old_mmr2 = $data2['mmr'];
     $current_win_streak1 = $data1['current_win_streak'];
     $current_win_streak2 = $data2['current_win_streak'];
+    $old_ranking1 = $data1['new_ranking']; // Récupérer l'ancien classement
+    $old_ranking2 = $data2['new_ranking']; // Récupérer l'ancien classement
 } else {
     die("Erreur: Joueur non trouvé.");
 }
@@ -382,18 +384,29 @@ if ($newPhase) {
 }
 
 if ($conn->query($sql) === TRUE) {
-    // Mettre à jour les MMR, les rangs et les séries de victoires des joueurs
-    $updatePlayer1 = "UPDATE players SET mmr = $new_mmr1, rank = '$new_rank1', current_win_streak = $new_current_win_streak1, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak1), best_mmr = GREATEST(best_mmr, $new_mmr1) WHERE id = $player1";
-    $updatePlayer2 = "UPDATE players SET mmr = $new_mmr2, rank = '$new_rank2', current_win_streak = $new_current_win_streak2, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak2), best_mmr = GREATEST(best_mmr, $new_mmr2) WHERE id = $player2";
-
+    // Mettre à jour les MMR, les rangs, les séries de victoires et les anciens classements des joueurs
+    $updatePlayer1 = "UPDATE players SET mmr = $new_mmr1, old_mmr = $old_mmr1, rank = '$new_rank1', old_ranking = $old_ranking1, current_win_streak = $new_current_win_streak1, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak1), best_mmr = GREATEST(best_mmr, $new_mmr1) WHERE id = $player1";
     $conn->query($updatePlayer1);
+    
+    $updatePlayer2 = "UPDATE players SET mmr = $new_mmr2, old_mmr = $old_mmr2, rank = '$new_rank2', old_ranking = $old_ranking2, current_win_streak = $new_current_win_streak2, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak2), best_mmr = GREATEST(best_mmr, $new_mmr2) WHERE id = $player2";
     $conn->query($updatePlayer2);
+
+    // Récupérer tous les joueurs et trier par MMR
+    $rankingQuery = "SELECT id, mmr FROM players ORDER BY mmr DESC";
+    $rankingResult = $conn->query($rankingQuery);
+
+    $ranking = 1;
+    while ($player = $rankingResult->fetch_assoc()) {
+        $playerId = $player['id'];
+        $updateRanking = "UPDATE players SET new_ranking = $ranking WHERE id = $playerId"; // Mettre à jour le nouveau classement
+        $conn->query($updateRanking);
+        $ranking++;
+    }
 
     header("Location: tournament_detail.php?id=$tournament_id");
     exit(); // Arrêter l'exécution après la redirection
 } else {
     echo "Erreur : " . $sql . "<br>" . $conn->error;
 }
-
 $conn->close();
 ?>
