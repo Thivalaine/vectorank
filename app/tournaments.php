@@ -1,52 +1,92 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Ajouter un tournoi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-</head>
-<body>
-    <?php include 'navbar.php'; ?>
-    <form action="add_tournament.php" method="POST" class="container mt-4 p-4 border rounded bg-light shadow-sm">
-        <h4 class="mb-4">Ajouter un Tournoi</h4>
-        
-        <div class="mb-3">
-            <label for="tournament_name" class="form-label">Nom du tournoi</label>
-            <input type="text" class="form-control" id="tournament_name" name="tournament_name" placeholder="Entrez le nom du tournoi" required>
+<?php include('header.php'); ?>
+
+<div class="container-fluid">
+    <style>
+        .card {
+            margin-top: 50px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        h1 {
+            font-size: 2.5rem;
+            color: #343a40;
+            text-align: center;
+        }
+        label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .form-select {
+            border-radius: 10px;
+            padding: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+    </style>
+
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-center">
+                    <h1>Ajouter un tournoi</h1>
+                </div>
+                <div class="card-body">
+                    <form action="add_tournament.php" method="POST">
+                        <div class="form-group">
+                            <label for="tournament_name">Nom du tournoi</label>
+                            <input type="text" class="form-control" id="tournament_name" name="tournament_name" placeholder="Entrez le nom du tournoi" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="participants">Participants (au nombre de 4, 8 ou 16)</label>
+                            <select multiple class="form-select select2" id="participants" name="participants[]" required>
+                                <?php
+                                // Connexion à la base de données
+                                include 'db.php';
+                                
+                                // Récupération des joueurs
+                                $result = $conn->query("SELECT id, name FROM players");
+                                while ($row = $result->fetch_assoc()) {
+                                    echo "<option value='{$row['id']}'>{$row['name']}</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-block">Ajouter</button>
+                            <a href="index.php" class="btn btn-secondary btn-block">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        
-        <div class="mb-3">
-            <label for="participants" class="form-label">Participants (au nombre de 4, 8 ou 16)</label>
-            <select multiple class="form-select select2" id="participants" name="participants[]" required>
-                <?php
-                // Connexion à la base de données
-                include 'db.php';
-                
-                // Récupération des joueurs
-                $result = $conn->query("SELECT id, name FROM players");
-                while ($row = $result->fetch_assoc()) {
-                    echo "<option value='{$row['id']}'>{$row['name']}</option>";
-                }
-                ?>
-            </select>
-        </div>
-        
-        <div class="d-grid">
-            <button type="submit" class="btn btn-primary btn-block">Ajouter le tournoi</button>
-        </div>
-    </form>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            $('.select2').select2({
-                placeholder: 'Sélectionnez des participants',
-                allowClear: true
-            });
+    </div>
+</div>
+
+<!-- Script to enhance Select2 styling and behavior -->
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            placeholder: 'Sélectionnez des participants',
+            allowClear: true,
+            width: '100%' // To ensure it fits nicely inside the form,
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+
+<?php include('footer.php'); ?>

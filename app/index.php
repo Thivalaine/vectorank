@@ -1,67 +1,16 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Liste des joueurs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <style>
-        body {
-            background-color: #f8f9fa;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .table {
-            margin-top: 20px;
-        }
-        .table th, .table td {
-            vertical-align: middle;
-            text-align: center;
-        }
-        .rank-img {
-            max-width: 50px;
-        }
-        .rank-text {
-            display: none;
-        }
-        .btn-info {
-            background-color: #17a2b8;
-            border: none;
-        }
-        .btn-info:hover {
-            background-color: #138496;
-        }
-        .header-title {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #343a40;
-        }
-        .collapse-content img {
-            max-width: 50px;
-        }
-        .collapse-content {
-            margin-top: 20px;
-        }
-    </style>
-    <script>
-        function handleImageError(img) {
-            var rankText = img.nextElementSibling;
-            img.style.display = 'none';
-            rankText.style.display = 'inline';
-        }
-    </script>
-</head>
-<body>
-<?php include 'navbar.php'; ?>
-<div class="container mt-5">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+<?php include('header.php'); ?>
+
+<div class="container">
+    <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-3">
         <h1 class="header-title">Liste des joueurs</h1>
-        <a href="add_match.php" class="btn btn-primary">Ajouter un match</a>
+        <div class="d-flex flex-row flex-md-row align-items-center justify-content-end gap-2">
+            <a href="tournaments.php" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i> Ajouter un tournoi
+            </a>
+            <a href="add_match.php" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i> Ajouter un match
+            </a>
+        </div>
     </div>
 
     <div class="table-responsive">
@@ -219,16 +168,16 @@
                 </li>
                 <li><strong>Calcul des nouveaux MMR</strong> :
                     <ul>
-                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points + $bonusPoints1)</code></li>
-                        <li>Si le joueur 1 perd : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $extra_points)</code></li>
-                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points + $bonusPoints2)</code></li>
-                        <li>Si le joueur 2 perd : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $extra_points)</code></li>
+                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points + WS + TP (si Tournoi))</code></li>
+                        <li>Si le joueur 1 perd : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $extra_points + TP (si Tournoi))</code></li>
+                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points + WS + TP)</code></li>
+                        <li>Si le joueur 2 perd : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $extra_points + TP (si Tournoi))</code></li>
                     </ul>
                 </li>
             </ol>
 
             <h2>Séries de victoires (Win Streaks)</h2>
-            <p>Une série de victoires (win streak) est définie comme une série consécutive de matchs gagnés par un joueur. Les win streaks affectent les calculs de MMR de manière significative :</p>
+            <p>Une série de victoires (ou WS) est définie comme une série consécutive de matchs gagnés par un joueur. Les win streaks affectent les calculs de MMR de manière significative :</p>
             <strong>Pour chaque victoire consécutive, le joueur peut recevoir un bonus supplémentaire de points comme suit :</strong>
             <ul>
                 <li>1 point pour une série de victoires < 5</li>
@@ -236,6 +185,22 @@
                 <li>3 points pour une série de victoires < 15</li>
                 <li>4 points pour une série de victoires < 20</li>
                 <li>5 points pour une série de victoires > 20</li>
+            </ul>
+
+            <h2>Tournois (Tournament Points)</h2>
+            <p>Les points de tournoi (ou TP) sont déterminés en fonction du nombre total de joueurs dans le tournoi et de la phase dans laquelle se déroule le match. Cela affecte le nombre de points attribués au gagnant et au perdant.</p>
+            <strong>Points de base attribués selon le nombre de joueurs :</strong>
+            <ul>
+                <li>6 points pour un tournoi à 4 joueurs</li>
+                <li>9 points pour un tournoi à 8 joueurs</li>
+                <li>12 points pour un tournoi à 16 joueurs</li>
+            </ul>
+            <strong>Points en fonction de la phase du tournoi :</strong>
+            <ul>
+                <li>Huitième de finale : le gagnant reçoit 25% des points de base, et le perdant en reçoit 10%</li>
+                <li>Quart de finale : le gagnant reçoit 50% des points de base, et le perdant en reçoit 25%</li>
+                <li>Demi-finale : le gagnant reçoit 75% des points de base, et le perdant en reçoit 50%</li>
+                <li>Finale : le gagnant reçoit les points de base, et le perdant en reçoit 75%</li>
             </ul>
 
             <h2>Rangs</h2>
@@ -254,8 +219,45 @@
             </ul>
         </div>
     </div>
+    <style>
+        .table {
+            margin-top: 20px;
+        }
+        .table th, .table td {
+            vertical-align: middle;
+            text-align: center;
+        }
+        .rank-img {
+            max-width: 50px;
+        }
+        .rank-text {
+            display: none;
+        }
+        .btn-info {
+            background-color: #17a2b8;
+            border: none;
+        }
+        .btn-info:hover {
+            background-color: #138496;
+        }
+        .header-title {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #343a40;
+        }
+        .collapse-content img {
+            max-width: 50px;
+        }
+        .collapse-content {
+            margin-top: 20px;
+        }
+    </style>
+    <script>
+        function handleImageError(img) {
+            var rankText = img.nextElementSibling;
+            img.style.display = 'none';
+            rankText.style.display = 'inline';
+        }
+    </script>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-</body>
-</html>
+<?php include('footer.php'); ?>

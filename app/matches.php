@@ -1,15 +1,6 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Liste des matchs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-</head>
-<body>
-<?php include 'navbar.php'; ?>
-<div class="container mt-5">
+<?php include('header.php'); ?>
+
+<div class="container">
     <h1>Liste des matchs</h1>
 
     <!-- Formulaire pour sélectionner le tri -->
@@ -30,133 +21,135 @@
         </select>
     </form>
 
-    <table class="table table-bordered">
-        <thead>
-        <tr>
-            <th>ID Match</th>
-            <th>Joueur 1</th>
-            <th>Rang Joueur 1</th>
-            <th>Score Joueur 1</th>
-            <th>Joueur 2</th>
-            <th>Rang Joueur 2</th>
-            <th>Score Joueur 2</th>
-            <th>Ancien MMR Joueur 1</th>
-            <th>Nouveau MMR Joueur 1</th>
-            <th>Ancien MMR Joueur 2</th>
-            <th>Nouveau MMR Joueur 2</th>
-            <th>Date du match</th>
-        </tr>
-        </thead>
-        <tbody>
-        <?php
-        include 'db.php';
+    <div class="table-responsive">
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>ID Match</th>
+                    <th>Joueur 1</th>
+                    <th>Rang Joueur 1</th>
+                    <th>Score Joueur 1</th>
+                    <th>Joueur 2</th>
+                    <th>Rang Joueur 2</th>
+                    <th>Score Joueur 2</th>
+                    <th>Ancien MMR Joueur 1</th>
+                    <th>Nouveau MMR Joueur 1</th>
+                    <th>Ancien MMR Joueur 2</th>
+                    <th>Nouveau MMR Joueur 2</th>
+                    <th>Date du match</th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php
+            include 'db.php';
 
-        // Pagination
-        $matchesPerPage = isset($_GET['matchesPerPage']) ? (int)$_GET['matchesPerPage'] : 10; // Nombre d'éléments par page
-        $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Page actuelle
-        $offset = ($currentPage - 1) * $matchesPerPage; // Décalage pour la requête SQL
+            // Pagination
+            $matchesPerPage = isset($_GET['matchesPerPage']) ? (int)$_GET['matchesPerPage'] : 10; // Nombre d'éléments par page
+            $currentPage = isset($_GET['page']) ? (int)$_GET['page'] : 1; // Page actuelle
+            $offset = ($currentPage - 1) * $matchesPerPage; // Décalage pour la requête SQL
 
-        // Critère de tri
-        $orderBy = isset($_GET['orderBy']) ? $_GET['orderBy'] : 'match_date'; // Critère de tri par défaut
-        $orderDir = isset($_GET['orderDir']) ? $_GET['orderDir'] : 'DESC'; // Direction de tri par défaut
+            // Critère de tri
+            $orderBy = isset($_GET['orderBy']) ? $_GET['orderBy'] : 'match_date'; // Critère de tri par défaut
+            $orderDir = isset($_GET['orderDir']) ? $_GET['orderDir'] : 'DESC'; // Direction de tri par défaut
 
-        // Récupérer le nombre total de matchs
-        $totalMatchesResult = $conn->query("SELECT COUNT(*) as total FROM matches");
-        $totalMatches = $totalMatchesResult->fetch_assoc()['total'];
-        $totalPages = ceil($totalMatches / $matchesPerPage); // Nombre total de pages
+            // Récupérer le nombre total de matchs
+            $totalMatchesResult = $conn->query("SELECT COUNT(*) as total FROM matches");
+            $totalMatches = $totalMatchesResult->fetch_assoc()['total'];
+            $totalPages = ceil($totalMatches / $matchesPerPage); // Nombre total de pages
 
-        // Construire la requête avec ORDER BY selon le choix de l'utilisateur
-        $orderByColumn = $orderBy;
+            // Construire la requête avec ORDER BY selon le choix de l'utilisateur
+            $orderByColumn = $orderBy;
 
-        // Si l'ordre est par rang, le MMR doit être calculé dans une sous-requête
-        if ($orderBy === 'rank1') {
-            $orderByColumn = "(CASE 
-                                WHEN p1.mmr >= 4000 THEN 'Challenger'
-                                WHEN p1.mmr >= 3000 THEN 'Grandmaster'
-                                WHEN p1.mmr >= 2500 THEN 'Master'
-                                WHEN p1.mmr >= 2000 THEN 'Diamond'
-                                WHEN p1.mmr >= 1750 THEN 'Emerald'
-                                WHEN p1.mmr >= 1500 THEN 'Platinum'
-                                WHEN p1.mmr >= 1250 THEN 'Gold'
-                                WHEN p1.mmr >= 1000 THEN 'Silver'
-                                WHEN p1.mmr >= 500 THEN 'Bronze'
-                                ELSE 'Iron'
-                             END)";
-        } elseif ($orderBy === 'rank2') {
-            $orderByColumn = "(CASE 
-                                WHEN p2.mmr >= 4000 THEN 'Challenger'
-                                WHEN p2.mmr >= 3000 THEN 'Grandmaster'
-                                WHEN p2.mmr >= 2500 THEN 'Master'
-                                WHEN p2.mmr >= 2000 THEN 'Diamond'
-                                WHEN p2.mmr >= 1750 THEN 'Emerald'
-                                WHEN p2.mmr >= 1500 THEN 'Platinum'
-                                WHEN p2.mmr >= 1250 THEN 'Gold'
-                                WHEN p2.mmr >= 1000 THEN 'Silver'
-                                WHEN p2.mmr >= 500 THEN 'Bronze'
-                                ELSE 'Iron'
-                             END)";
-        }
-
-        // Récupérer les matchs avec LIMIT, OFFSET et ORDER BY
-        $matches = $conn->query("SELECT m.*, p1.name AS player1_name, p1.mmr AS mmr1, p2.name AS player2_name, p2.mmr AS mmr2 
-                                  FROM matches m 
-                                  JOIN players p1 ON m.player1 = p1.id 
-                                  JOIN players p2 ON m.player2 = p2.id
-                                  ORDER BY $orderByColumn $orderDir, m.match_date $orderDir
-                                  LIMIT $offset, $matchesPerPage");
-
-        if (!$matches) {
-            die("Erreur de requête SQL : " . $conn->error);
-        }
-
-        while ($match = $matches->fetch_assoc()) {
-            // Calculer le rang des joueurs
-            $rank1 = getRank($match['mmr1']);
-            $rank2 = getRank($match['mmr2']);
-            echo "<tr>
-                <td>{$match['id']}</td>
-                <td>{$match['player1_name']}</td>
-                <td>{$rank1}</td>
-                <td>{$match['score1']}</td>
-                <td>{$match['player2_name']}</td>
-                <td>{$rank2}</td>
-                <td>{$match['score2']}</td>
-                <td>{$match['old_mmr1']}</td>
-                <td>{$match['new_mmr1']}</td>
-                <td>{$match['old_mmr2']}</td>
-                <td>{$match['new_mmr2']}</td>
-                <td>{$match['match_date']}</td>
-            </tr>";
-        }
-        $conn->close();
-
-        // Fonction pour déterminer le rang en fonction du MMR
-        function getRank($mmr) {
-            if ($mmr >= 4000) {
-                return "Challenger";
-            } elseif ($mmr >= 3000) {
-                return "Grandmaster";
-            } elseif ($mmr >= 2500) {
-                return "Master";
-            } elseif ($mmr >= 2000) {
-                return "Diamond";
-            } elseif ($mmr >= 1750) {
-                return "Emerald";
-            } elseif ($mmr >= 1500) {
-                return "Platinum";
-            } elseif ($mmr >= 1250) {
-                return "Gold";
-            } elseif ($mmr >= 1000) {
-                return "Silver";
-            } elseif ($mmr >= 500) {
-                return "Bronze";
-            } else {
-                return "Iron";
+            // Si l'ordre est par rang, le MMR doit être calculé dans une sous-requête
+            if ($orderBy === 'rank1') {
+                $orderByColumn = "(CASE 
+                                    WHEN p1.mmr >= 4000 THEN 'Challenger'
+                                    WHEN p1.mmr >= 3000 THEN 'Grandmaster'
+                                    WHEN p1.mmr >= 2500 THEN 'Master'
+                                    WHEN p1.mmr >= 2000 THEN 'Diamond'
+                                    WHEN p1.mmr >= 1750 THEN 'Emerald'
+                                    WHEN p1.mmr >= 1500 THEN 'Platinum'
+                                    WHEN p1.mmr >= 1250 THEN 'Gold'
+                                    WHEN p1.mmr >= 1000 THEN 'Silver'
+                                    WHEN p1.mmr >= 500 THEN 'Bronze'
+                                    ELSE 'Iron'
+                                END)";
+            } elseif ($orderBy === 'rank2') {
+                $orderByColumn = "(CASE 
+                                    WHEN p2.mmr >= 4000 THEN 'Challenger'
+                                    WHEN p2.mmr >= 3000 THEN 'Grandmaster'
+                                    WHEN p2.mmr >= 2500 THEN 'Master'
+                                    WHEN p2.mmr >= 2000 THEN 'Diamond'
+                                    WHEN p2.mmr >= 1750 THEN 'Emerald'
+                                    WHEN p2.mmr >= 1500 THEN 'Platinum'
+                                    WHEN p2.mmr >= 1250 THEN 'Gold'
+                                    WHEN p2.mmr >= 1000 THEN 'Silver'
+                                    WHEN p2.mmr >= 500 THEN 'Bronze'
+                                    ELSE 'Iron'
+                                END)";
             }
-        }
-        ?>
-        </tbody>
-    </table>
+
+            // Récupérer les matchs avec LIMIT, OFFSET et ORDER BY
+            $matches = $conn->query("SELECT m.*, p1.name AS player1_name, p1.mmr AS mmr1, p2.name AS player2_name, p2.mmr AS mmr2 
+                                    FROM matches m 
+                                    JOIN players p1 ON m.player1 = p1.id 
+                                    JOIN players p2 ON m.player2 = p2.id
+                                    ORDER BY $orderByColumn $orderDir, m.match_date $orderDir
+                                    LIMIT $offset, $matchesPerPage");
+
+            if (!$matches) {
+                die("Erreur de requête SQL : " . $conn->error);
+            }
+
+            while ($match = $matches->fetch_assoc()) {
+                // Calculer le rang des joueurs
+                $rank1 = getRank($match['mmr1']);
+                $rank2 = getRank($match['mmr2']);
+                echo "<tr>
+                    <td>{$match['id']}</td>
+                    <td>{$match['player1_name']}</td>
+                    <td>{$rank1}</td>
+                    <td>{$match['score1']}</td>
+                    <td>{$match['player2_name']}</td>
+                    <td>{$rank2}</td>
+                    <td>{$match['score2']}</td>
+                    <td>{$match['old_mmr1']}</td>
+                    <td>{$match['new_mmr1']}</td>
+                    <td>{$match['old_mmr2']}</td>
+                    <td>{$match['new_mmr2']}</td>
+                    <td>{$match['match_date']}</td>
+                </tr>";
+            }
+            $conn->close();
+
+            // Fonction pour déterminer le rang en fonction du MMR
+            function getRank($mmr) {
+                if ($mmr >= 4000) {
+                    return "Challenger";
+                } elseif ($mmr >= 3000) {
+                    return "Grandmaster";
+                } elseif ($mmr >= 2500) {
+                    return "Master";
+                } elseif ($mmr >= 2000) {
+                    return "Diamond";
+                } elseif ($mmr >= 1750) {
+                    return "Emerald";
+                } elseif ($mmr >= 1500) {
+                    return "Platinum";
+                } elseif ($mmr >= 1250) {
+                    return "Gold";
+                } elseif ($mmr >= 1000) {
+                    return "Silver";
+                } elseif ($mmr >= 500) {
+                    return "Bronze";
+                } else {
+                    return "Iron";
+                }
+            }
+            ?>
+            </tbody>
+        </table>
+    </div>
 
     <!-- Navigation de la pagination -->
     <nav aria-label="Page navigation">
@@ -225,6 +218,5 @@
     </nav>
 
 </div>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-</body>
-</html>
+
+<?php include('footer.php'); ?>

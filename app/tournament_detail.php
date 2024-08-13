@@ -98,230 +98,234 @@ $potentialSemiFinals = array_slice($quarterFinalWinners, 0, 4);
 $potentialFinals = array_slice($semiFinalWinners, 0, 2);
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Détails du Tournoi</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-</head>
-<body>
-    <?php include 'navbar.php'; ?>
-    <div class="container mt-5">
-        <h1>Détails du Tournoi: <?php echo htmlspecialchars($tournament['name']); ?></h1>
-        <p><strong>Date de début:</strong> <?php echo htmlspecialchars($tournament['start_date']); ?></p>
-        <p><strong>Date de fin:</strong> <?php echo htmlspecialchars($tournament['end_date']); ?></p>
-        
-        <h2 class="mt-4">Matchs du Tournoi</h2>
-        <table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Joueur 1</th>
-            <th>Joueur 2</th>
-            <th>Score 1</th>
-            <th>Score 2</th>
-            <th>Vainqueur</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php if (empty($matches)): ?>
-            <tr>
-                <td colspan="6">Aucun match trouvé pour ce tournoi.</td>
-            </tr>
-        <?php else: ?>
-            <?php foreach ($matches as $match): ?>
+<?php include('header.php'); ?>
+
+<div class="container">
+    <h1 class="display-4 text-center mb-4">Détails du Tournoi: <?php echo htmlspecialchars($tournament['name']); ?></h1>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <p><strong>Date de début:</strong> <?php echo htmlspecialchars($tournament['start_date']); ?></p>
+        </div>
+        <div class="col-md-6">
+            <p><strong>Date de fin:</strong> <?php echo htmlspecialchars($tournament['end_date']); ?></p>
+        </div>
+    </div>
+
+    <h2 class="mt-4 text-center">Matchs du Tournoi</h2>
+    <div class="table-responsive mt-4">
+        <table class="table table-striped table-hover table-bordered">
+            <thead class="thead-dark">
                 <tr>
-                    <!-- Détermine le gagnant et le perdant -->
-                    <?php
-                    $isPlayer1Winner = $match['score1'] > $match['score2'];
-                    $winnerClass = $isPlayer1Winner ? 'winner' : 'loser';
-                    $loserClass = $isPlayer1Winner ? 'loser' : 'winner';
-                    ?>
-                    
-                    <td><?php echo htmlspecialchars($match['id']); ?></td>
-                    <td class="<?php echo $isPlayer1Winner ? $winnerClass : $loserClass; ?>">
-                        <?php echo htmlspecialchars($match['player1_name']); ?>
-                    </td>
-                    <td class="<?php echo $isPlayer1Winner ? $loserClass : $winnerClass; ?>">
-                        <?php echo htmlspecialchars($match['player2_name']); ?>
-                    </td>
-                    <td><?php echo htmlspecialchars($match['score1']); ?></td>
-                    <td><?php echo htmlspecialchars($match['score2']); ?></td>
-                    <td><?php echo htmlspecialchars($isPlayer1Winner ? $match['player1_name'] : $match['player2_name']); ?></td>
+                    <th>ID</th>
+                    <th>Joueur 1</th>
+                    <th>Joueur 2</th>
+                    <th>Score 1</th>
+                    <th>Score 2</th>
+                    <th>Vainqueur</th>
                 </tr>
+            </thead>
+            <tbody>
+                <?php if (empty($matches)): ?>
+                    <tr>
+                        <td colspan="6" class="text-center">Aucun match trouvé pour ce tournoi.</td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach ($matches as $match): ?>
+                        <tr>
+                            <?php
+                            $isMatchPlayed = $match['score1'] !== null && $match['score2'] !== null && ($match['score1'] > 0 || $match['score2'] > 0);
+                            $isPlayer1Winner = $isMatchPlayed && $match['score1'] > $match['score2'];
+                            ?>
+                            
+                            <td><?php echo htmlspecialchars($match['id']); ?></td>
+                            <td class="font-weight-bold <?php echo $isMatchPlayed && $isPlayer1Winner ? 'text-success' : 'text-danger'; ?>">
+                                <?php echo htmlspecialchars($match['player1_name']); ?>
+                            </td>
+                            <td class="font-weight-bold <?php echo $isMatchPlayed && !$isPlayer1Winner ? 'text-success' : 'text-danger'; ?>">
+                                <?php echo htmlspecialchars($match['player2_name']); ?>
+                            </td>
+                            <td class="text-center"><?php echo htmlspecialchars($match['score1']); ?></td>
+                            <td class="text-center"><?php echo htmlspecialchars($match['score2']); ?></td>
+                            <td class="text-center font-weight-bold">
+                                <?php if ($isMatchPlayed): ?>
+                                    <?php echo htmlspecialchars($isPlayer1Winner ? $match['player1_name'] : $match['player2_name']); ?>
+                                <?php else: ?>
+                                    Non joué
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+
+    <h1 class="text-center mb-5 display-4">Phases du Tournoi</h1>
+    <div class="row tournament-phase">
+        <div class="col-12">
+            <h4 class="text-center">Huitièmes de Finale</h4>
+        </div>
+        <?php if (empty($matchesByRound['huitième'])): ?>
+            <div class="col-12 text-center">
+                <p>Aucun match n'a été joué pour les huitièmes de finale.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($matchesByRound['huitième'] as $match): ?>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                vs 
+                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                            </h5>
+                            <div class="outcome">
+                                <?php if (isset($match['score1']) && isset($match['score2'])): ?>
+                                    <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
+                                    <span class="winner text-success font-weight-bold">
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                    </span>
+                                    <span class="loser text-danger font-weight-bold">
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <h4 class="score">Non joué</h4>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
+                                <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             <?php endforeach; ?>
         <?php endif; ?>
-    </tbody>
-</table>
 
-
-        <h1 class="text-center mb-5 display-4">Phases du Tournoi</h1>
-        <div class="row tournament-phase">
-    <div class="col-12">
-        <h4 class="text-center">Huitièmes de Finale</h4>
-    </div>
-    <?php if (empty($matchesByRound['huitième'])): ?>
-        <div class="col-12 text-center">
-            <p>Aucun match n'a été joué pour les huitièmes de finale.</p>
+        <div class="col-12">
+            <h4 class="text-center">Quarts de Finale</h4>
         </div>
-    <?php else: ?>
-        <?php foreach ($matchesByRound['huitième'] as $match): ?>
-            <div class="col-12 col-md-6 col-lg-3 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <?php echo htmlspecialchars($match['player1_name']); ?> 
-                            vs 
-                            <?php echo htmlspecialchars($match['player2_name']); ?> 
-                        </h5>
-                        <div class="outcome">
-                            <?php if (isset($match['score1']) && isset($match['score2'])): ?>
-                                <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
-                                <span class="winner text-success font-weight-bold">
-                                    <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                </span>
-                                <span class="loser text-danger font-weight-bold">
-                                    <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                </span>
-                            <?php else: ?>
-                                <h4 class="score">Non joué</h4>
+        <?php if (empty($matchesByRound['quart'])): ?>
+            <div class="col-12 text-center">
+                <p>Aucun match n'a été joué pour les quarts de finale.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($matchesByRound['quart'] as $match): ?>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                vs 
+                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                            </h5>
+                            <div class="outcome">
+                                <?php if (isset($match['score1']) && isset($match['score2'])): ?>
+                                    <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
+                                    <span class="winner text-success font-weight-bold">
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                    </span>
+                                    <span class="loser text-danger font-weight-bold">
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                    </span>
+                                <?php else: ?>
+                                    <h4 class="score">Non joué</h4>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
+                                <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
                             <?php endif; ?>
                         </div>
-                        <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
-                            <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
-                        <?php endif; ?>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
 
-    <div class="col-12">
-        <h4 class="text-center">Quarts de Finale</h4>
-    </div>
-    <?php if (empty($matchesByRound['quart'])): ?>
-        <div class="col-12 text-center">
-            <p>Aucun match n'a été joué pour les quarts de finale.</p>
+        <div class="col-12">
+            <h4 class="text-center">Demi-Finale</h4>
         </div>
-    <?php else: ?>
-        <?php foreach ($matchesByRound['quart'] as $match): ?>
-            <div class="col-12 col-md-6 col-lg-3 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <?php echo htmlspecialchars($match['player1_name']); ?> 
-                            vs 
-                            <?php echo htmlspecialchars($match['player2_name']); ?> 
-                        </h5>
-                        <div class="outcome">
-                            <?php if (isset($match['score1']) && isset($match['score2'])): ?>
-                                <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
-                                <span class="winner text-success font-weight-bold">
-                                    <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                </span>
-                                <span class="loser text-danger font-weight-bold">
-                                    <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                </span>
-                            <?php else: ?>
-                                <h4 class="score">Non joué</h4>
+        <?php if (empty($matchesByRound['demi'])): ?>
+            <div class="col-12 text-center">
+                <p>Aucun match n'a été joué pour les demi-finales.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($matchesByRound['demi'] as $match): ?>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                vs 
+                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                            </h5>
+                            <div class="outcome">
+                                <?php if (isset($match['score1']) && isset($match['score2'])): ?>
+                                    <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
+                                    <span class="winner text-success font-weight-bold">
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                    </span>
+                                    <span class="loser text-danger font-weight-bold">
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-warning">3ème</span>
+                                    </span>
+                                <?php else: ?>
+                                    <h4 class="score">Non joué</h4>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
+                                <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
                             <?php endif; ?>
                         </div>
-                        <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
-                            <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
-                        <?php endif; ?>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
+            <?php endforeach; ?>
+        <?php endif; ?>
 
-    <div class="col-12">
-        <h4 class="text-center">Demi-Finale</h4>
-    </div>
-    <?php if (empty($matchesByRound['demi'])): ?>
-        <div class="col-12 text-center">
-            <p>Aucun match n'a été joué pour les demi-finales.</p>
+        <div class="col-12">
+            <h4 class="text-center">Finale</h4>
         </div>
-    <?php else: ?>
-        <?php foreach ($matchesByRound['demi'] as $match): ?>
-            <div class="col-12 col-md-6 col-lg-3 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <?php echo htmlspecialchars($match['player1_name']); ?> 
-                            vs 
-                            <?php echo htmlspecialchars($match['player2_name']); ?> 
-                        </h5>
-                        <div class="outcome">
-                            <?php if (isset($match['score1']) && isset($match['score2'])): ?>
-                                <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
-                                <span class="winner text-success font-weight-bold">
-                                    <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                </span>
-                                <span class="loser text-danger font-weight-bold">
-                                    <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                    <span class="badge bg-warning">3ème</span>
-                                </span>
-                            <?php else: ?>
-                                <h4 class="score">Non joué</h4>
+        <?php if (empty($matchesByRound['finale'])): ?>
+            <div class="col-12 text-center">
+                <p>Aucun match n'a été joué pour la finale.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($matchesByRound['finale'] as $match): ?>
+                <div class="col-12 col-md-6 col-lg-3 mb-3">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                vs 
+                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                            </h5>
+                            <div class="outcome">
+                                <?php if (isset($match['score1']) && isset($match['score2'])): ?>
+                                    <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
+                                    <span class="winner text-success font-weight-bold">
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-warning">1er</span>
+                                    </span>
+                                    <span class="loser text-danger font-weight-bold">
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-warning">2ème</span>
+                                    </span>
+                                <?php else: ?>
+                                    <h4 class="score">Non joué</h4>
+                                <?php endif; ?>
+                            </div>
+                            <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
+                                <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
                             <?php endif; ?>
                         </div>
-                        <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
-                            <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
-                        <?php endif; ?>
                     </div>
                 </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-
-    <div class="col-12">
-        <h4 class="text-center">Finale</h4>
+            <?php endforeach; ?>
+        <?php endif; ?>
     </div>
-    <?php if (empty($matchesByRound['finale'])): ?>
-        <div class="col-12 text-center">
-            <p>Aucun match n'a été joué pour la finale.</p>
-        </div>
-    <?php else: ?>
-        <?php foreach ($matchesByRound['finale'] as $match): ?>
-            <div class="col-12 col-md-6 col-lg-3 mb-3">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <?php echo htmlspecialchars($match['player1_name']); ?> 
-                            vs 
-                            <?php echo htmlspecialchars($match['player2_name']); ?> 
-                        </h5>
-                        <div class="outcome">
-                            <?php if (isset($match['score1']) && isset($match['score2'])): ?>
-                                <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
-                                <span class="winner text-success font-weight-bold">
-                                    <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                    <span class="badge bg-warning">1er</span>
-                                </span>
-                                <span class="loser text-danger font-weight-bold">
-                                    <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
-                                    <span class="badge bg-warning">2ème</span>
-                                </span>
-                            <?php else: ?>
-                                <h4 class="score">Non joué</h4>
-                            <?php endif; ?>
-                        </div>
-                        <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
-                            <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    <?php endif; ?>
-</div>
 
 
 
-        <style>
+<style>
             .tournament-phase {
                 display: flex;
                 justify-content: space-around;
@@ -399,9 +403,7 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                 color: green;
                 text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
             }
-        </style>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-</body>
-</html>
+</style>
+</div>
 
+<?php include('footer.php'); ?>
