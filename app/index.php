@@ -1,11 +1,14 @@
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Liste des joueurs";
+    include('header.php'); 
+?>
 
 <div class="container">
     <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-3">
         <h1 class="header-title">Liste des joueurs</h1>
         <div class="d-flex flex-row flex-md-row align-items-center justify-content-end gap-2">
             <a href="tournaments.php" class="btn btn-primary">
-                <i class="fas fa-plus-circle me-2"></i> Ajouter un tournoi
+                <i class="fas fa-plus-circle me-2"></i> Créer un tournoi
             </a>
             <a href="add_match.php" class="btn btn-primary">
                 <i class="fas fa-plus-circle me-2"></i> Ajouter un match

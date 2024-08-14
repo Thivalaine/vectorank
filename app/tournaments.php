@@ -1,4 +1,7 @@
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Création un tournoi";
+    include('header.php'); 
+?>
 
 <div class="container-fluid">
     <style>
@@ -42,7 +45,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header text-center">
-                    <h1>Ajouter un tournoi</h1>
+                    <h1>Créer un tournoi</h1>
                 </div>
                 <div class="card-body">
                     <form action="add_tournament.php" method="POST">
@@ -68,7 +71,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-block">Ajouter</button>
+                            <button type="submit" class="btn btn-success btn-block">Créer</button>
                             <a href="index.php" class="btn btn-secondary btn-block">Annuler</a>
                         </div>
                     </form>

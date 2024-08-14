@@ -98,7 +98,10 @@ $potentialSemiFinals = array_slice($quarterFinalWinners, 0, 4);
 $potentialFinals = array_slice($semiFinalWinners, 0, 2);
 ?>
 
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Tournoi : " . $tournament['name']; 
+    include('header.php'); 
+?>
 
 <div class="container">
     <h1 class="display-4 text-center mb-4">Détails du Tournoi: <?php echo htmlspecialchars($tournament['name']); ?></h1>

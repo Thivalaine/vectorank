@@ -1,4 +1,7 @@
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Liste des matchs"; 
+    include('header.php'); 
+?>
 
 <div class="container">
     <h1>Liste des matchs</h1>

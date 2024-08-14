@@ -3,7 +3,7 @@
 <div class="container-fluid">
     <style>
         .card {
-            margin-top: 50px;
+            margin-top: 15px;
             padding: 30px;
             border-radius: 15px;
             box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.1);
@@ -43,7 +43,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <h1>Ajouter un match de tournoi</h1>
+                <h1>Ajouter un match</h1>
                 <form action="add_match_tournament_action.php" method="post">
                     <input type="hidden" name="id" value="<?php echo $_GET['id']; ?>">
                     <div class="form-group">
@@ -105,7 +105,7 @@
                         <input type="hidden" name="tournament_id" value="<?php echo $tournament_id; ?>">
                     </div>
                     <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary btn-block">Ajouter</button>
+                        <button type="submit" class="btn btn-success btn-block">Créer</button>
                         <a href="tournament_detail.php?id=<?php echo $tournament_id; ?>" class="btn btn-secondary btn-block">Annuler</a>
                     </div>
                 </form>

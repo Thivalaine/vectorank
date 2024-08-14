@@ -30,7 +30,7 @@
           </a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="tournament_list.php"><i class="fas fa-list"></i> Liste des tournois</a></li>
-            <li><a class="dropdown-item" href="tournaments.php"><i class="fas fa-plus-circle"></i> Ajouter un tournoi</a></li>
+            <li><a class="dropdown-item" href="tournaments.php"><i class="fas fa-plus-circle"></i> Créer un tournoi</a></li>
           </ul>
         </li>
       </ul>

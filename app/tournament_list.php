@@ -18,7 +18,10 @@ try {
 }
 ?>
 
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Liste des tournois";  
+    include('header.php'); 
+?>
 
 <div class="container">
     <h1 class="mb-4">Liste des Tournois</h1>

@@ -1,25 +1,37 @@
-<?php include('header.php'); ?>
+<?php
+    include 'db.php';
+    $playerId = $_GET['id'];
+
+    // Récupérer les informations du joueur
+    $result = $conn->query("SELECT * FROM players WHERE id = $playerId");
+    
+    if (!$result) {
+        echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
+        exit;
+    }
+
+    $player = $result->fetch_assoc();
+
+    if (!$player) {
+        echo "<h2>Joueur non trouvé.</h2>";
+        exit;
+    }
+
+    $pageTitle = "Profil de " . $player['name']; 
+    include('header.php'); 
+
+
+    function buildUrl($playerId, $page, $matchesPerPage, $searchQuery, $tab) {
+        return "player_profile.php?id=" . urlencode($playerId) .
+            "&page=" . $page .
+            "&matchesPerPage=" . $matchesPerPage .
+            "&search=" . urlencode($searchQuery) .
+            "&tab=" . urlencode($tab);
+    }
+?>
 
     <div class="container">
         <?php
-        include 'db.php';
-        $playerId = $_GET['id'];
-
-        // Récupérer les informations du joueur
-        $result = $conn->query("SELECT * FROM players WHERE id = $playerId");
-        
-        if (!$result) {
-            echo "<h2>Erreur de requête SQL : " . $conn->error . "</h2>";
-            exit;
-        }
-
-        $player = $result->fetch_assoc();
-
-        if (!$player) {
-            echo "<h2>Joueur non trouvé.</h2>";
-            exit;
-        }
-
         // Compter les victoires et défaites
         $winsResult = $conn->query("SELECT COUNT(*) as wins FROM matches WHERE (player1 = $playerId AND score1 > score2) OR (player2 = $playerId AND score2 > score1)");
         $winsCount = $winsResult ? $winsResult->fetch_assoc()['wins'] : 0;
@@ -411,89 +423,87 @@
         </div>
     </div>
 
-        <nav class="d-flex justify-content-between flex-column flex-sm-row align-items-center mt-2">
-            <ul class="pagination">
-                <?php if ($currentPage > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage - 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Précédent</a>
-                    </li>
-                <?php endif; ?>
+<nav class="d-flex justify-content-between flex-column flex-sm-row align-items-center mt-2">
+    <ul class="pagination">
+        <?php if ($currentPage > 1): ?>
+            <li class="page-item">
+                <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage - 1, $matchesPerPage, $searchQuery, $currentTab); ?>">Précédent</a>
+            </li>
+        <?php endif; ?>
 
-                <?php
-                // Afficher la première page
-                if ($totalPages > 1) {
-                    echo '<li class="page-item ' . ($currentPage == 1 ? 'active' : '') . '">
-                            <a class="page-link" href="player_profile.php?id=' . $playerId . '&page=1&matchesPerPage=' . $matchesPerPage . '&search=' . htmlspecialchars($searchQuery) . '">1</a>
-                        </li>';
-                }
+        <?php
+        // Afficher la première page
+        if ($totalPages > 1): ?>
+            <li class="page-item <?php echo ($currentPage == 1 ? 'active' : ''); ?>">
+                <a class="page-link" href="<?php echo buildUrl($playerId, 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">1</a>
+            </li>
+        <?php endif; ?>
 
-                // Afficher les ellipses si nécessaire (sauf sur mobile)
-                if ($currentPage > 3) {
-                    echo '<li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>';
-                }
+        <?php if ($currentPage > 3): ?>
+            <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
+        <?php endif; ?>
 
-                // Calculer les pages à afficher autour de la page actuelle
-                $startPage = max(2, $currentPage - 1); // page précédente
-                $endPage = min($totalPages - 1, $currentPage + 1); // page suivante
+        <?php 
+        $startPage = max(2, $currentPage - 1); // page précédente
+        $endPage = min($totalPages - 1, $currentPage + 1); // page suivante
 
-                for ($i = $startPage; $i <= $endPage; $i++): ?>
-                    <li class="page-item <?php if ($i == $currentPage) echo 'active'; ?>">
-                        <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $i; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>"><?php echo $i; ?></a>
-                    </li>
-                <?php endfor; ?>
+        for ($i = $startPage; $i <= $endPage; $i++): ?>
+            <li class="page-item <?php echo ($i == $currentPage ? 'active' : ''); ?>">
+                <a class="page-link" href="<?php echo buildUrl($playerId, $i, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $i; ?></a>
+            </li>
+        <?php endfor; ?>
 
-                <?php
-                // Afficher les ellipses si nécessaire (sauf sur mobile)
-                if ($currentPage < $totalPages - 2) {
-                    echo '<li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>';
-                }
+        <!-- Afficher les ellipses si nécessaire (sauf sur mobile) -->
+        <?php if ($currentPage < $totalPages - 2): ?>
+            <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
+        <?php endif; ?>
 
-                // Afficher la dernière page
-                if ($totalPages > 1) {
-                    echo '<li class="page-item ' . ($currentPage == $totalPages ? 'active' : '') . '">
-                            <a class="page-link" href="player_profile.php?id=' . $playerId . '&page=' . $totalPages . '&matchesPerPage=' . $matchesPerPage . '&search=' . htmlspecialchars($searchQuery) . '">' . $totalPages . '</a>
-                        </li>';
-                }
-                ?>
+        <!-- Afficher la dernière page -->
+        <?php if ($totalPages > 1): ?>
+            <li class="page-item <?php echo ($currentPage == $totalPages ? 'active' : ''); ?>">
+                <a class="page-link" href="<?php echo buildUrl($playerId, $totalPages, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $totalPages; ?></a>
+            </li>
+        <?php endif; ?>
 
-                <?php if ($currentPage < $totalPages): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="player_profile.php?id=<?php echo $playerId; ?>&page=<?php echo $currentPage + 1; ?>&matchesPerPage=<?php echo $matchesPerPage; ?>&search=<?php echo htmlspecialchars($searchQuery); ?>">Suivant</a>
-                    </li>
-                <?php endif; ?>
-            </ul>
+        <?php if ($currentPage < $totalPages): ?>
+            <li class="page-item">
+                <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage + 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">Suivant</a>
+            </li>
+        <?php endif; ?>
+    </ul>
 
-            <form class="mb-3 mt-3 mt-sm-0" method="GET" action="player_profile.php">
-                <input type="hidden" name="id" value="<?php echo $playerId; ?>">
-                <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
-                <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
-                    <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
-                    <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
-                    <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
-                </select>
-            </form>
-        </nav>
+    <form class="mb-3 mt-3 mt-sm-0" method="GET" action="player_profile.php">
+        <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+        <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
+        <input type="hidden" name="tab" value="<?php echo htmlspecialchars($currentTab); ?>"> <!-- Champ caché pour le tab -->
+        <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
+            <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
+            <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
+                <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
+            </select>
+        </form>
+    </nav>
     </div>
 </div>
 <script>
     document.querySelectorAll('.nav-link').forEach(function(tab) {
-    tab.addEventListener('click', function(event) {
-        event.preventDefault();
-        
-        const selectedTab = tab.getAttribute('href').substring(1); // Récupère l'ID de l'onglet sans le '#'
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set('tab', selectedTab); // Ajoute ou met à jour le paramètre 'tab'
-        
-        // Change l'URL sans recharger la page
-        history.pushState({}, '', currentUrl);
-        
-        // Active l'onglet correspondant
-        const targetTab = new bootstrap.Tab(tab);
-        targetTab.show();
+        tab.addEventListener('click', function(event) {
+            event.preventDefault();
+            
+            const selectedTab = tab.getAttribute('href').substring(1); // Récupère l'ID de l'onglet sans le '#'
+            const currentUrl = new URL(window.location.href);
+            currentUrl.searchParams.set('tab', selectedTab); // Ajoute ou met à jour le paramètre 'tab'
+            
+            // Change l'URL sans recharger la page
+            history.pushState({}, '', currentUrl);
+            
+            // Active l'onglet correspondant
+            const targetTab = new bootstrap.Tab(tab);
+            targetTab.show();
+        });
     });
-});
 
-    // Facultatif : Ouvre l'onglet correspondant au chargement de la page en fonction du paramètre dans l'URL
+    // Ouvre l'onglet correspondant au chargement de la page
     window.addEventListener('load', function() {
         const currentUrl = new URL(window.location.href);
         const selectedTab = currentUrl.searchParams.get('tab');

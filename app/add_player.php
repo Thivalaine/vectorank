@@ -1,4 +1,7 @@
-<?php include('header.php'); ?>
+<?php
+    $pageTitle = "Ajout un joueur";
+    include('header.php'); 
+?>
 
 <div class="container-fluid">
     <style>
