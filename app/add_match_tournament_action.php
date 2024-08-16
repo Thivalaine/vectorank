@@ -40,10 +40,6 @@ $observed2 = $score1 < $score2 ? 1 : 0;
 $probability1 = 1 / (1 + pow(10, ($old_mmr2 - $old_mmr1) / 400));
 $probability2 = 1 / (1 + pow(10, ($old_mmr1 - $old_mmr2) / 400));
 
-// Valeurs attendues basées sur les probabilités
-$expected1 = 0.5;
-$expected2 = 0.5;
-
 // Marge de victoire
 $victory_margin = abs($score1 - $score2);
 
@@ -52,6 +48,12 @@ $victory_factor = 1 + ($victory_margin / 10);
 
 // Points supplémentaires en fonction de l'écart de score
 $extra_points = $victory_margin;
+
+// Calculer la différence ELO
+$elo_difference = abs($old_mmr1 - $old_mmr2);
+
+// Calcul du coefficient en fonction de la différence d'ELO
+$elo_difference_factor = log(1 + $elo_difference / 400);
 
 // Fonction pour calculer les points bonus basés sur la série de victoires
 function calculateBonusPoints($current_streak) {
@@ -73,8 +75,8 @@ if ($score1 > $score2) {
     $bonusPoints1 = calculateBonusPoints($current_win_streak1);
     $bonusPoints2 = 0;
 
-    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $victory_margin + $bonusPoints1);
-    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $victory_margin);
+    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor + $victory_margin + $bonusPoints1);
+    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor - $victory_margin);
     
     // Mettre à jour la série de victoires
     $new_current_win_streak1 = $current_win_streak1 + 1;
@@ -85,8 +87,8 @@ if ($score1 > $score2) {
     $bonusPoints1 = 0;
     $bonusPoints2 = calculateBonusPoints($current_win_streak2);
 
-    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $victory_margin);
-    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $victory_margin + $bonusPoints2);
+    $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor - $victory_margin);
+    $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor + $victory_margin + $bonusPoints2);
     
     // Mettre à jour la série de victoires
     $new_current_win_streak1 = 0;
@@ -102,9 +104,6 @@ $points2 = $new_mmr2 - $old_mmr2;
 // Ajouter les points bonus au nouveau MMR
 $new_mmr1 += $bonusPoints1;
 $new_mmr2 += $bonusPoints2;
-
-// Calculer la différence ELO
-$elo_difference = abs($old_mmr1 - $old_mmr2);
 
 // Déterminer les nouveaux rangs
 function getRank($mmr) {
@@ -204,8 +203,6 @@ $sql = "UPDATE matches SET
     score2 = '$score2',
     observed1 = '$observed1',
     observed2 = '$observed2',
-    expected1 = '$expected1',
-    expected2 = '$expected2',
     victory_margin = '$victory_margin',
     victory_factor = '$victory_factor',
     probability1 = '$probability1',

@@ -60,7 +60,7 @@ for ($i = 0; $i < count($player1_array); $i++) {
     if ($result1->num_rows > 0 && $result2->num_rows > 0) {
         $data1 = $result1->fetch_assoc();
         $data2 = $result2->fetch_assoc();
-
+    
         $old_mmr1 = $data1['mmr'];
         $old_mmr2 = $data2['mmr'];
         $current_win_streak1 = $data1['current_win_streak'];
@@ -70,61 +70,61 @@ for ($i = 0; $i < count($player1_array); $i++) {
     } else {
         die("Erreur: Joueur non trouvé.");
     }
-
+    
     // Calculer les résultats
     $observed1 = $score1 > $score2 ? 1 : 0;
     $observed2 = $score1 < $score2 ? 1 : 0;
-
-    // Valeurs attendues
-    $expected1 = 0.5;
-    $expected2 = 0.5;
-
+    
     // Calculer les probabilités
     $probability1 = 1 / (1 + pow(10, ($old_mmr2 - $old_mmr1) / 400));
     $probability2 = 1 / (1 + pow(10, ($old_mmr1 - $old_mmr2) / 400));
-
+    
     // Marge de victoire
     $victory_margin = abs($score1 - $score2);
-
+    
     // Facteur de victoire en fonction de la marge de victoire
     $victory_factor = 1 + ($victory_margin / 10);
-
+    
     // Différence d'ELO
     $elo_difference = abs($old_mmr1 - $old_mmr2);
-
+    
+    // Calcul du coefficient en fonction de la différence d'ELO
+    $elo_difference_factor = log(1 + $elo_difference / 400);
+    
     // Calculer les nouveaux MMR
     if ($score1 > $score2) {
         $bonusPoints1 = calculateBonusPoints($current_win_streak1);
         $bonusPoints2 = 0;
-
-        $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $victory_margin + $bonusPoints1);
-        $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $victory_margin);
-
+    
+        $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor + $victory_margin + $bonusPoints1);
+        $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor - $victory_margin);
+    
         // Mettre à jour la série de victoires
         $new_current_win_streak1 = $current_win_streak1 + 1;
         $new_current_win_streak2 = 0;
     } else {
         $bonusPoints1 = 0;
         $bonusPoints2 = calculateBonusPoints($current_win_streak2);
-
-        $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $victory_margin);
-        $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $victory_margin + $bonusPoints2);
-
+    
+        $new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor - $victory_margin);
+        $new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor + $victory_margin + $bonusPoints2);
+    
         // Mettre à jour la série de victoires
         $new_current_win_streak1 = 0;
         $new_current_win_streak2 = $current_win_streak2 + 1;
     }
-
+    
     // Points gagnés ou perdus (sans les bonus)
     $points1 = $new_mmr1 - $old_mmr1;
     $points2 = $new_mmr2 - $old_mmr2;
-
+    
     // Ajouter les points bonus au nouveau MMR
     $new_mmr1 += $bonusPoints1;
     $new_mmr2 += $bonusPoints2;
-
+    
+    // Déterminer les nouveaux rangs
     $new_rank1 = getRank($new_mmr1);
-    $new_rank2 = getRank($new_mmr2);
+    $new_rank2 = getRank($new_mmr2);    
 
     // On ajoute 1s car la requête de listage des matchs est basé sur la date du match et on ajoute 1s pour différencier les matchs ajoutés de manière multiples
     if ($i > 0) {
@@ -135,8 +135,8 @@ for ($i = 0; $i < count($player1_array); $i++) {
     $match_date = $datetime->format('Y-m-d H:i:s');
 
     // Insérer le match dans la base de données
-    $sql = "INSERT INTO matches (player1, player2, score1, score2, observed1, observed2, expected1, expected2, victory_margin, victory_factor, probability1, probability2, old_mmr1, old_mmr2, new_mmr1, new_mmr2, elo_difference, match_date, points1, points2, win_streak_bonus1, win_streak_bonus2)
-    VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$expected1', '$expected2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$match_date', '$points1', '$points2', '$bonusPoints1', '$bonusPoints2')";
+    $sql = "INSERT INTO matches (player1, player2, score1, score2, observed1, observed2, victory_margin, victory_factor, probability1, probability2, old_mmr1, old_mmr2, new_mmr1, new_mmr2, elo_difference, match_date, points1, points2, win_streak_bonus1, win_streak_bonus2)
+    VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$match_date', '$points1', '$points2', '$bonusPoints1', '$bonusPoints2')";
 
 
     if ($conn->query($sql) === TRUE) {

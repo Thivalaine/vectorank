@@ -44,8 +44,6 @@ CREATE TABLE IF NOT EXISTS matches (
     score2 INT(11) DEFAULT NULL,
     observed1 FLOAT DEFAULT NULL,
     observed2 FLOAT DEFAULT NULL,
-    expected1 FLOAT DEFAULT NULL,
-    expected2 FLOAT DEFAULT NULL,
     victory_margin INT(11) DEFAULT NULL,
     victory_factor FLOAT DEFAULT NULL,
     probability1 FLOAT DEFAULT NULL,

@@ -125,7 +125,8 @@
     <div class="collapse collapse-content" id="mmrDetails">
         <div class="card card-body">
             <h2>Calcul du MMR</h2>
-            <p>Le MMR (Matchmaking Rating) est calculé en fonction des résultats des matchs et de la différence de MMR entre les joueurs. Voici comment cela fonctionne :</p>
+            <p>Le MMR (Matchmaking Rating) est calculé en fonction des résultats des matchs, de la différence de MMR entre les joueurs, et d'un facteur supplémentaire basé sur cette différence. Voici comment cela fonctionne :</p>
+            
             <h3>Étapes de calcul du MMR</h3>
             <ol>
                 <li><strong>Récupération des MMR actuels des joueurs</strong> :
@@ -148,12 +149,6 @@
                         <li>Probabilité de victoire du joueur 2 : <code>$probability2 = 1 / (1 + 10 ^ (($old_mmr1 - $old_mmr2) / 400))</code></li>
                     </ul>
                 </li>
-                <li><strong>Calcul des valeurs attendues</strong> :
-                    <ul>
-                        <li>Valeur attendue pour le joueur 1 : <code>$expected1 = 0.5</code></li>
-                        <li>Valeur attendue pour le joueur 2 : <code>$expected2 = 0.5</code></li>
-                    </ul>
-                </li>
                 <li><strong>Marge de victoire</strong> :
                     <ul>
                         <li>Marge de victoire : <code>$victory_margin = abs($score1 - $score2)</code></li>
@@ -164,6 +159,11 @@
                         <li>Facteur de victoire : <code>$victory_factor = 1 + ($victory_margin / 10)</code></li>
                     </ul>
                 </li>
+                <li><strong>Facteur de différence d'ELO</strong> :
+                    <ul>
+                        <li>Coefficient basé sur la différence d'ELO : <code>$elo_difference_factor = log(1 + $elo_difference / 400)</code></li>
+                    </ul>
+                </li>
                 <li><strong>Points supplémentaires</strong> :
                     <ul>
                         <li>Points supplémentaires : <code>$extra_points = $victory_margin</code></li>
@@ -171,10 +171,10 @@
                 </li>
                 <li><strong>Calcul des nouveaux MMR</strong> :
                     <ul>
-                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor + $extra_points + WS + TP (si Tournoi))</code></li>
-                        <li>Si le joueur 1 perd : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor - $extra_points + TP (si Tournoi))</code></li>
-                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor + $extra_points + WS + TP)</code></li>
-                        <li>Si le joueur 2 perd : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor - $extra_points + TP (si Tournoi))</code></li>
+                        <li>Si le joueur 1 gagne : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor + $extra_points + WS + TP (si Tournoi))</code></li>
+                        <li>Si le joueur 1 perd : <code>$new_mmr1 = ceil($old_mmr1 + 10 * ($observed1 - $probability1) * $victory_factor * $elo_difference_factor - $extra_points + TP (si Tournoi))</code></li>
+                        <li>Si le joueur 2 gagne : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor + $extra_points + WS + TP)</code></li>
+                        <li>Si le joueur 2 perd : <code>$new_mmr2 = ceil($old_mmr2 + 10 * ($observed2 - $probability2) * $victory_factor * $elo_difference_factor - $extra_points + TP (si Tournoi))</code></li>
                     </ul>
                 </li>
             </ol>
@@ -222,6 +222,7 @@
             </ul>
         </div>
     </div>
+
     <style>
         .table {
             margin-top: 20px;
