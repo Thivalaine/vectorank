@@ -62,8 +62,22 @@ CREATE TABLE IF NOT EXISTS matches (
     round VARCHAR(50) DEFAULT NULL,
     consolation_points INT(11) DEFAULT '0',
     winner_points INT(11) DEFAULT '0',
+    is_adjusted TINYINT(1) DEFAULT '0',
     PRIMARY KEY (id),
     FOREIGN KEY (tournament_id) REFERENCES tournaments(id),
     FOREIGN KEY (player1) REFERENCES players(id),
     FOREIGN KEY (player2) REFERENCES players(id)
 );
+
+CREATE TABLE adjustments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_id INT NOT NULL,
+    old_mmr DECIMAL(10, 2) NOT NULL,
+    new_mmr DECIMAL(10, 2) NOT NULL,
+    adjustment_value DECIMAL(10, 2) NOT NULL,
+    match_id INT NOT NULL,
+    adjustment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (player_id) REFERENCES players(id),
+    FOREIGN KEY (match_id) REFERENCES matches(id)
+);
+

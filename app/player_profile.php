@@ -171,6 +171,7 @@
                                         <th>MMR</th>
                                         <th>MMR Adversaire</th>
                                         <th>Série de victoires</th>
+                                        <th>Action</th> <!-- Nouvelle colonne pour le bouton d'ajustement -->
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -188,7 +189,8 @@
                                             IF(m.player1 = $playerId, m.points1, m.points2) AS player_points,
                                             IF(m.player1 = $playerId, m.win_streak_bonus1, m.win_streak_bonus2) AS player_bonus,
                                             IF(m.player1 = $playerId, m.points2, m.points1) AS opponent_points,
-                                            IF(m.player1 = $playerId, m.win_streak_bonus2, m.win_streak_bonus1) AS opponent_bonus
+                                            IF(m.player1 = $playerId, m.win_streak_bonus2, m.win_streak_bonus1) AS opponent_bonus,
+                                            m.is_adjusted -- Ajouter la colonne is_adjusted à la sélection
                                         FROM matches m
                                         JOIN players p1 ON m.player1 = p1.id
                                         JOIN players p2 ON m.player2 = p2.id
@@ -211,7 +213,9 @@
                                         $playerNewMMR = $isPlayer1 ? $match['new_mmr1'] : $match['new_mmr2'];
                                         $opponentOldMMR = $isPlayer1 ? $match['old_mmr2'] : $match['old_mmr1'];
                                         $opponentNewMMR = $isPlayer1 ? $match['new_mmr2'] : $match['new_mmr1'];
-                                        $rowColor = ($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1']) ? 'table-success' : 'table-danger';
+                                        
+                                        // Déterminer la couleur de la ligne en fonction de l'état du match
+                                        $rowColor = $match['is_adjusted'] ? 'table-secondary' : ($isPlayer1 && $match['score1'] > $match['score2'] || !$isPlayer1 && $match['score2'] > $match['score1'] ? 'table-success' : 'table-danger');
 
                                         // Afficher les points et les bonus de séries de victoires pour le joueur
                                         $pointsDisplayPlayer = '';
@@ -250,6 +254,9 @@
                                         // Créer le lien vers la page de profil de l'adversaire avec des styles
                                         $opponentProfileLink = "<a href='/player_profile.php?id=$opponentId' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>".htmlspecialchars($opponentName)."</a>";
 
+                                        // Ajouter un bouton de signalement avec une icône FontAwesome seulement si le match n'a pas encore été ajusté
+                                        $adjustmentButton = $match['is_adjusted'] ? '' : "<a href='add_adjustment.php?match_id={$match['id']}' class='btn btn-danger btn-sm'><i class='fas fa-exclamation-triangle'></i></a>";
+
                                         echo "<tr class='$rowColor'>
                                             <td>{$match['match_date']}</td>
                                             <td>$opponentProfileLink</td> <!-- Afficher le nom de l'adversaire comme lien -->
@@ -257,6 +264,7 @@
                                             <td>$playerOldMMR → <strong>$playerNewMMR</strong> <span>$pointsDisplayPlayer</span></td>
                                             <td>$opponentOldMMR → <strong>$opponentNewMMR</strong> <span>$pointsDisplayOpponent</span></td>
                                             <td>$winStreakDisplay</td> <!-- Affichage de la série de victoires -->
+                                            <td>$adjustmentButton</td> <!-- Affichage du bouton de signalement -->
                                         </tr>";
                                     }
                                     ?>

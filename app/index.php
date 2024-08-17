@@ -8,10 +8,10 @@
         <h1 class="header-title">Liste des joueurs</h1>
         <div class="d-flex flex-row flex-md-row align-items-center justify-content-end gap-2">
             <a href="tournaments.php" class="btn btn-primary">
-                <i class="fas fa-plus-circle me-2"></i> Créer un tournoi
+                <i class="fas fa-plus-circle me-2"></i> Tournoi
             </a>
             <a href="add_match.php" class="btn btn-primary">
-                <i class="fas fa-plus-circle me-2"></i> Ajouter un match
+                <i class="fas fa-plus-circle me-2"></i> Match
             </a>
         </div>
     </div>
