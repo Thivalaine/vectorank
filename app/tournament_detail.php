@@ -245,7 +245,7 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
         <?php endif; ?>
 
         <div class="col-12">
-            <h4 class="text-center">Demi-Finale</h4>
+            <h4 class="text-center">Demi-Finales</h4>
         </div>
         <?php if (empty($matchesByRound['demi'])): ?>
             <div class="col-12 text-center">
