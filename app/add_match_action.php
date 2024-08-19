@@ -138,13 +138,12 @@ for ($i = 0; $i < count($player1_array); $i++) {
     $sql = "INSERT INTO matches (player1, player2, score1, score2, observed1, observed2, victory_margin, victory_factor, probability1, probability2, old_mmr1, old_mmr2, new_mmr1, new_mmr2, elo_difference, match_date, points1, points2, win_streak_bonus1, win_streak_bonus2)
     VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$match_date', '$points1', '$points2', '$bonusPoints1', '$bonusPoints2')";
 
-
     if ($conn->query($sql) === TRUE) {
         // Mettre à jour les MMR et rangs des joueurs
-        $updatePlayer1 = "UPDATE players SET mmr = $new_mmr1, rank = '$new_rank1', current_win_streak = $new_current_win_streak1 WHERE id = $player1";
+        $updatePlayer1 = "UPDATE players SET mmr = $new_mmr1, old_mmr = $old_mmr1, rank = '$new_rank1', old_ranking = $old_ranking1, current_win_streak = $new_current_win_streak1, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak1), best_mmr = GREATEST(best_mmr, $new_mmr1) WHERE id = $player1";
         $conn->query($updatePlayer1);
 
-        $updatePlayer2 = "UPDATE players SET mmr = $new_mmr2, rank = '$new_rank2', current_win_streak = $new_current_win_streak2 WHERE id = $player2";
+        $updatePlayer2 = "UPDATE players SET mmr = $new_mmr2, old_mmr = $old_mmr2, rank = '$new_rank2', old_ranking = $old_ranking2, current_win_streak = $new_current_win_streak2, best_win_streak = GREATEST(best_win_streak, $new_current_win_streak2), best_mmr = GREATEST(best_mmr, $new_mmr2) WHERE id = $player2";
         $conn->query($updatePlayer2);
     } else {
         echo "Erreur : " . $sql . "<br>" . $conn->error;

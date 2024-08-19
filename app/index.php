@@ -159,6 +159,12 @@
                         <li>Facteur de victoire : <code>$victory_factor = 1 + ($victory_margin / 10)</code></li>
                     </ul>
                 </li>
+                <li>
+                    <strong>Différence d'ELO</strong> :
+                    <ul>
+                        <li>Différence d'ELO : <code>$elo_difference = abs($old_mmr1 - $old_mmr2)</code></li>
+                    </ul>
+                </li>
                 <li><strong>Facteur de différence d'ELO</strong> :
                     <ul>
                         <li>Coefficient basé sur la différence d'ELO : <code>$elo_difference_factor = log(1 + $elo_difference / 400)</code></li>

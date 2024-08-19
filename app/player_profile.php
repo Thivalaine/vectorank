@@ -202,6 +202,21 @@
 
                                     $matchesResult = $conn->query($matchesQuery);
 
+                                    // BACKUP (récupérer le MMR le plus élevé atteint par le joueur)
+                                    // $highestMMRResult = $conn->query("
+                                    //     SELECT MAX(GREATEST(
+                                    //         IF(player1 = $playerId, old_mmr1, 0), 
+                                    //         IF(player2 = $playerId, old_mmr2, 0), 
+                                    //         IF(player1 = $playerId, new_mmr1, 0), 
+                                    //         IF(player2 = $playerId, new_mmr2, 0)
+                                    //     )) as highest_mmr 
+                                    //     FROM matches 
+                                    //     WHERE player1 = $playerId OR player2 = $playerId
+                                    // ");
+                                    // $highestMMR = $highestMMRResult ? $highestMMRResult->fetch_assoc()['highest_mmr'] : 0;
+
+                                    // echo "<h3>Plus haut MMR atteint: $highestMMR</h3>";
+
                                     while ($match = $matchesResult->fetch_assoc()) {
                                         // Vérifiez si le joueur actuel est player1 ou player2
                                         $isPlayer1 = $match['player1'] == $playerId;
