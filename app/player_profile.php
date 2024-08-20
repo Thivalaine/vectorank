@@ -70,34 +70,65 @@
         $totalPages = ceil($totalMatches / $matchesPerPage);
 
         // Obtenir le joueur contre qui il perd le plus souvent
-        $mostLostAgainstResult = $conn->query("
-            SELECT CASE 
-                WHEN player1 = $playerId THEN player2
-                ELSE player1
-            END as opponent_id, COUNT(*) as losses
-            FROM matches
-            WHERE (player1 = $playerId AND score1 < score2) OR (player2 = $playerId AND score2 < score1)
-            GROUP BY opponent_id
-            ORDER BY losses DESC
-            LIMIT 1
-        ");
-        $mostLostAgainst = $mostLostAgainstResult ? $mostLostAgainstResult->fetch_assoc() : null;
-        $mostLostAgainstName = $mostLostAgainst ? $conn->query("SELECT name FROM players WHERE id = {$mostLostAgainst['opponent_id']}")->fetch_assoc()['name'] : 'N/A';
+$mostLostAgainstResult = $conn->query("
+SELECT CASE 
+    WHEN player1 = $playerId THEN player2
+    ELSE player1
+END as opponent_id, COUNT(*) as losses
+FROM matches
+WHERE (player1 = $playerId AND score1 < score2) OR (player2 = $playerId AND score2 < score1)
+GROUP BY opponent_id
+ORDER BY losses DESC
+LIMIT 1
+");
+$mostLostAgainst = $mostLostAgainstResult ? $mostLostAgainstResult->fetch_assoc() : null;
 
-        // Obtenir le joueur contre qui il gagne le plus souvent
-        $mostWonAgainstResult = $conn->query("
-            SELECT CASE 
-                WHEN player1 = $playerId THEN player2
-                ELSE player1
-            END as opponent_id, COUNT(*) as wins
-            FROM matches
-            WHERE (player1 = $playerId AND score1 > score2) OR (player2 = $playerId AND score2 > score1)
-            GROUP BY opponent_id
-            ORDER BY wins DESC
-            LIMIT 1
-        ");
-        $mostWonAgainst = $mostWonAgainstResult ? $mostWonAgainstResult->fetch_assoc() : null;
-        $mostWonAgainstName = $mostWonAgainst ? $conn->query("SELECT name FROM players WHERE id = {$mostWonAgainst['opponent_id']}")->fetch_assoc()['name'] : 'N/A';
+if ($mostLostAgainst) {
+$opponentId = $mostLostAgainst['opponent_id'];
+// Récupérer les informations du joueur
+$mostLostAgainstNameResult = $conn->query("SELECT name, is_anonymized FROM players WHERE id = $opponentId");
+$mostLostAgainstPlayer = $mostLostAgainstNameResult ? $mostLostAgainstNameResult->fetch_assoc() : null;
+
+if ($mostLostAgainstPlayer) {
+    // Vérifier si le joueur est anonymisé
+    $mostLostAgainstName = $mostLostAgainstPlayer['is_anonymized'] ? 'N/A' : $mostLostAgainstPlayer['name'];
+} else {
+    $mostLostAgainstName = 'N/A';
+}
+} else {
+$mostLostAgainstName = 'N/A';
+}
+
+// Obtenir le joueur contre qui il gagne le plus souvent
+$mostWonAgainstResult = $conn->query("
+SELECT CASE 
+    WHEN player1 = $playerId THEN player2
+    ELSE player1
+END as opponent_id, COUNT(*) as wins
+FROM matches
+WHERE (player1 = $playerId AND score1 > score2) OR (player2 = $playerId AND score2 > score1)
+GROUP BY opponent_id
+ORDER BY wins DESC
+LIMIT 1
+");
+$mostWonAgainst = $mostWonAgainstResult ? $mostWonAgainstResult->fetch_assoc() : null;
+
+if ($mostWonAgainst) {
+$opponentId = $mostWonAgainst['opponent_id'];
+// Récupérer les informations du joueur
+$mostWonAgainstNameResult = $conn->query("SELECT name, is_anonymized FROM players WHERE id = $opponentId");
+$mostWonAgainstPlayer = $mostWonAgainstNameResult ? $mostWonAgainstNameResult->fetch_assoc() : null;
+
+if ($mostWonAgainstPlayer) {
+    // Vérifier si le joueur est anonymisé
+    $mostWonAgainstName = $mostWonAgainstPlayer['is_anonymized'] ? 'N/A' : $mostWonAgainstPlayer['name'];
+} else {
+    $mostWonAgainstName = 'N/A';
+}
+} else {
+$mostWonAgainstName = 'N/A';
+}
+
         ?>
 
         <h1>Profil de <?php echo htmlspecialchars($player['name']); ?></h1>

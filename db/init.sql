@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS players (
     best_mmr INT DEFAULT 0 -- Colonne pour stocker le meilleur MMR du joueur
     new_ranking INT(11) NOT NULL DEFAULT 0, -- Colonne pour le nouveau classement
     old_ranking INT(11) NOT NULL DEFAULT 0 -- Colonne pour l'ancien classement
+    is_anonymized TINYINT(1) DEFAULT '0' -- Colonne pour stocker si le joueur est anonymisé
 );
 
 CREATE TABLE IF NOT EXISTS tournaments (
