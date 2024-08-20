@@ -32,17 +32,21 @@
             include 'db.php';
             // Modifiez la requête pour trier par MMR
             $result = $conn->query("SELECT *, CASE 
-                        WHEN mmr >= 4000 THEN 'Challenger' 
-                        WHEN mmr >= 3000 THEN 'Grandmaster' 
-                        WHEN mmr >= 2500 THEN 'Master' 
-                        WHEN mmr >= 2000 THEN 'Diamond' 
-                        WHEN mmr >= 1750 THEN 'Emerald' 
-                        WHEN mmr >= 1500 THEN 'Platinum' 
-                        WHEN mmr >= 1250 THEN 'Gold' 
-                        WHEN mmr >= 1000 THEN 'Silver' 
-                        WHEN mmr >= 500 THEN 'Bronze' 
-                        ELSE 'Iron' 
-                    END AS rank FROM players ORDER BY mmr DESC");
+                WHEN mmr >= 4000 THEN 'Challenger' 
+                WHEN mmr >= 3000 THEN 'Grandmaster' 
+                WHEN mmr >= 2500 THEN 'Master' 
+                WHEN mmr >= 2000 THEN 'Diamond' 
+                WHEN mmr >= 1750 THEN 'Emerald' 
+                WHEN mmr >= 1500 THEN 'Platinum' 
+                WHEN mmr >= 1250 THEN 'Gold' 
+                WHEN mmr >= 1000 THEN 'Silver' 
+                WHEN mmr >= 500 THEN 'Bronze' 
+                ELSE 'Iron' 
+            END AS rank 
+            FROM players 
+            WHERE is_anonymized = FALSE
+            ORDER BY mmr DESC");
+
 
             while ($row = $result->fetch_assoc()) {
                 // Calcul de la différence de MMR

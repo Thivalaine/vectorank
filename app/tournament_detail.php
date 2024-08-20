@@ -17,7 +17,8 @@ if (!$tournament) {
 }
 
 // Récupération des matchs associés au tournoi
-$matchesSql = "SELECT m.*, p1.name AS player1_name, p2.name AS player2_name 
+$matchesSql = "SELECT m.*, p1.name AS player1_name, p1.is_anonymized AS player1_anonymized, 
+                                p2.name AS player2_name, p2.is_anonymized AS player2_anonymized
                FROM matches m 
                JOIN players p1 ON m.player1 = p1.id 
                JOIN players p2 ON m.player2 = p2.id 
@@ -139,20 +140,23 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                             <?php
                             $isMatchPlayed = $match['score1'] !== null && $match['score2'] !== null && ($match['score1'] > 0 || $match['score2'] > 0);
                             $isPlayer1Winner = $isMatchPlayed && $match['score1'] > $match['score2'];
+                            
+                            $player1Name = $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']);
+                            $player2Name = $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']);
                             ?>
                             
                             <td><?php echo htmlspecialchars($match['id']); ?></td>
                             <td class="font-weight-bold <?php echo $isMatchPlayed && $isPlayer1Winner ? 'text-success' : 'text-danger'; ?>">
-                                <?php echo htmlspecialchars($match['player1_name']); ?>
+                                <?php echo $player1Name; ?>
                             </td>
                             <td class="font-weight-bold <?php echo $isMatchPlayed && !$isPlayer1Winner ? 'text-success' : 'text-danger'; ?>">
-                                <?php echo htmlspecialchars($match['player2_name']); ?>
+                                <?php echo $player2Name; ?>
                             </td>
                             <td class="text-center"><?php echo htmlspecialchars($match['score1']); ?></td>
                             <td class="text-center"><?php echo htmlspecialchars($match['score2']); ?></td>
                             <td class="text-center font-weight-bold">
                                 <?php if ($isMatchPlayed): ?>
-                                    <?php echo htmlspecialchars($isPlayer1Winner ? $match['player1_name'] : $match['player2_name']); ?>
+                                    <?php echo htmlspecialchars($isPlayer1Winner ? $player1Name : $player2Name); ?>
                                 <?php else: ?>
                                     Non joué
                                 <?php endif; ?>
@@ -179,18 +183,18 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">
-                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                <?php echo $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']); ?> 
                                 vs 
-                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                                <?php echo $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']); ?>
                             </h5>
                             <div class="outcome">
                                 <?php if (isset($match['score1']) && isset($match['score2'])): ?>
                                     <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
                                     <span class="winner text-success font-weight-bold">
-                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                     </span>
                                     <span class="loser text-danger font-weight-bold">
-                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                     </span>
                                 <?php else: ?>
                                     <h4 class="score">Non joué</h4>
@@ -204,7 +208,11 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+    </div>
 
+    <!-- Ajoutez des sections similaires pour les autres phases -->
+    <!-- Quart de finale -->
+    <div class="row tournament-phase">
         <div class="col-12">
             <h4 class="text-center">Quarts de Finale</h4>
         </div>
@@ -218,18 +226,18 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">
-                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                <?php echo $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']); ?> 
                                 vs 
-                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                                <?php echo $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']); ?>
                             </h5>
                             <div class="outcome">
                                 <?php if (isset($match['score1']) && isset($match['score2'])): ?>
                                     <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
                                     <span class="winner text-success font-weight-bold">
-                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                     </span>
                                     <span class="loser text-danger font-weight-bold">
-                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                     </span>
                                 <?php else: ?>
                                     <h4 class="score">Non joué</h4>
@@ -243,7 +251,10 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+    </div>
 
+    <!-- Demi-finale -->
+    <div class="row tournament-phase">
         <div class="col-12">
             <h4 class="text-center">Demi-Finales</h4>
         </div>
@@ -257,18 +268,18 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">
-                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                <?php echo $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']); ?> 
                                 vs 
-                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                                <?php echo $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']); ?>
                             </h5>
                             <div class="outcome">
                                 <?php if (isset($match['score1']) && isset($match['score2'])): ?>
                                     <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
                                     <span class="winner text-success font-weight-bold">
-                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                     </span>
                                     <span class="loser text-danger font-weight-bold">
-                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                         <span class="badge bg-warning">3ème</span>
                                     </span>
                                 <?php else: ?>
@@ -283,7 +294,10 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+    </div>
 
+    <!-- Finale -->
+    <div class="row tournament-phase">
         <div class="col-12">
             <h4 class="text-center">Finale</h4>
         </div>
@@ -297,19 +311,19 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
                     <div class="card text-center">
                         <div class="card-body">
                             <h5 class="card-title">
-                                <?php echo htmlspecialchars($match['player1_name']); ?> 
+                                <?php echo $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']); ?> 
                                 vs 
-                                <?php echo htmlspecialchars($match['player2_name']); ?> 
+                                <?php echo $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']); ?>
                             </h5>
                             <div class="outcome">
                                 <?php if (isset($match['score1']) && isset($match['score2'])): ?>
                                     <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
                                     <span class="winner text-success font-weight-bold">
-                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                         <span class="badge bg-warning">1er</span>
                                     </span>
                                     <span class="loser text-danger font-weight-bold">
-                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? $match['player1_name'] : $match['player2_name']); ?>
+                                        <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
                                         <span class="badge bg-warning">2ème</span>
                                     </span>
                                 <?php else: ?>
@@ -327,8 +341,7 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
     </div>
 
 
-
-<style>
+    <style>
             .tournament-phase {
                 display: flex;
                 justify-content: space-around;

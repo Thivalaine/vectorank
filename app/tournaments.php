@@ -62,7 +62,7 @@
                                 include 'db.php';
                                 
                                 // Récupération des joueurs
-                                $result = $conn->query("SELECT id, name FROM players");
+                                $result = $conn->query("SELECT id, name FROM players WHERE is_anonymized = 0");
                                 while ($row = $result->fetch_assoc()) {
                                     echo "<option value='{$row['id']}'>{$row['name']}</option>";
                                 }

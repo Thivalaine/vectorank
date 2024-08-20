@@ -98,7 +98,7 @@
                             <select class="form-control" id="player1" name="player1[]" required>
                                 <?php
                                 include 'db.php';
-                                $result = $conn->query("SELECT * FROM players");
+                                $result = $conn->query("SELECT * FROM players WHERE is_anonymized = 0");
                                 while ($row = $result->fetch_assoc()) {
                                     echo "<option value='{$row['id']}'>{$row['name']}</option>";
                                 }

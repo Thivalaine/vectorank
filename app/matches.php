@@ -1,6 +1,6 @@
 <?php
-    $pageTitle = "Liste des matchs"; 
-    include('header.php'); 
+$pageTitle = "Liste des matchs"; 
+include('header.php'); 
 ?>
 
 <div class="container">
@@ -93,7 +93,8 @@
             }
 
             // Récupérer les matchs avec LIMIT, OFFSET et ORDER BY
-            $matches = $conn->query("SELECT m.*, p1.name AS player1_name, p1.mmr AS mmr1, p2.name AS player2_name, p2.mmr AS mmr2 
+            $matches = $conn->query("SELECT m.*, p1.name AS player1_name, p1.mmr AS mmr1, p2.name AS player2_name, p2.mmr AS mmr2, 
+                                    p1.is_anonymized AS p1_anonymized, p2.is_anonymized AS p2_anonymized
                                     FROM matches m 
                                     JOIN players p1 ON m.player1 = p1.id 
                                     JOIN players p2 ON m.player2 = p2.id
@@ -106,20 +107,27 @@
 
             while ($match = $matches->fetch_assoc()) {
                 // Calculer le rang des joueurs
-                $rank1 = getRank($match['mmr1']);
-                $rank2 = getRank($match['mmr2']);
+                $rank1 = $match['p1_anonymized'] ? 'Anonyme' : getRank($match['mmr1']);
+                $rank2 = $match['p2_anonymized'] ? 'Anonyme' : getRank($match['mmr2']);
+                $player1Name = $match['p1_anonymized'] ? 'Anonyme' : $match['player1_name'];
+                $player2Name = $match['p2_anonymized'] ? 'Anonyme' : $match['player2_name'];
+                $mmr1Old = $match['p1_anonymized'] ? 'Anonyme' : $match['old_mmr1'];
+                $mmr1New = $match['p1_anonymized'] ? 'Anonyme' : $match['new_mmr1'];
+                $mmr2Old = $match['p2_anonymized'] ? 'Anonyme' : $match['old_mmr2'];
+                $mmr2New = $match['p2_anonymized'] ? 'Anonyme' : $match['new_mmr2'];
+
                 echo "<tr>
                     <td>{$match['id']}</td>
-                    <td>{$match['player1_name']}</td>
+                    <td>{$player1Name}</td>
                     <td>{$rank1}</td>
                     <td>{$match['score1']}</td>
-                    <td>{$match['player2_name']}</td>
+                    <td>{$player2Name}</td>
                     <td>{$rank2}</td>
                     <td>{$match['score2']}</td>
-                    <td>{$match['old_mmr1']}</td>
-                    <td>{$match['new_mmr1']}</td>
-                    <td>{$match['old_mmr2']}</td>
-                    <td>{$match['new_mmr2']}</td>
+                    <td>{$mmr1Old}</td>
+                    <td>{$mmr1New}</td>
+                    <td>{$mmr2Old}</td>
+                    <td>{$mmr2New}</td>
                     <td>{$match['match_date']}</td>
                 </tr>";
             }
