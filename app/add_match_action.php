@@ -6,6 +6,7 @@ $player1_array = $_POST['player1'];
 $player2_array = $_POST['player2'];
 $score1_array = $_POST['score1'];
 $score2_array = $_POST['score2'];
+$lastModified_array = $_POST['lastModified']; // Récupérer les dates de modification
 
 // Fonction pour calculer les points bonus basés sur la série de victoires
 function calculateBonusPoints($current_streak) {
@@ -47,6 +48,7 @@ for ($i = 0; $i < count($player1_array); $i++) {
     $player2 = $player2_array[$i];
     $score1 = $score1_array[$i];
     $score2 = $score2_array[$i];
+    $lastModified = $lastModified_array[$i]; // Date de modification du match
 
     // Vérifier que les joueurs sont différents
     if ($player1 == $player2) {
@@ -126,17 +128,9 @@ for ($i = 0; $i < count($player1_array); $i++) {
     $new_rank1 = getRank($new_mmr1);
     $new_rank2 = getRank($new_mmr2);    
 
-    // On ajoute 1s car la requête de listage des matchs est basé sur la date du match et on ajoute 1s pour différencier les matchs ajoutés de manière multiples
-    if ($i > 0) {
-        $datetime->modify('+1 second');
-    }
-
-    // Formater la date pour l'insertion dans la base de données
-    $match_date = $datetime->format('Y-m-d H:i:s');
-
     // Insérer le match dans la base de données
     $sql = "INSERT INTO matches (player1, player2, score1, score2, observed1, observed2, victory_margin, victory_factor, probability1, probability2, old_mmr1, old_mmr2, new_mmr1, new_mmr2, elo_difference, match_date, points1, points2, win_streak_bonus1, win_streak_bonus2)
-    VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$match_date', '$points1', '$points2', '$bonusPoints1', '$bonusPoints2')";
+    VALUES ('$player1', '$player2', '$score1', '$score2', '$observed1', '$observed2', '$victory_margin', '$victory_factor', '$probability1', '$probability2', '$old_mmr1', '$old_mmr2', '$new_mmr1', '$new_mmr2', '$elo_difference', '$lastModified', '$points1', '$points2', '$bonusPoints1', '$bonusPoints2')";
 
     if ($conn->query($sql) === TRUE) {
         // Mettre à jour les MMR et rangs des joueurs
@@ -164,6 +158,7 @@ while ($player = $rankingResult->fetch_assoc()) {
 
 $conn->close();
 
-header("Location: index.php");
+// Redirection vers la page de confirmation
+header("Location: match_confirmation.php");
 exit();
 ?>
