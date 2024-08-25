@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS players (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     mmr INT NOT NULL,
-    old_mmr INT NOT NULL,
+    old_mmr INT NOT NULL DEFAULT 0, -- Colonne pour stocker l'ancien MMR du joueur
     rank VARCHAR(20) DEFAULT 'Silver', -- Colonne pour stocker le rang du joueur
     current_win_streak INT DEFAULT 0, -- Colonne pour stocker la série de victoires actuelle
     best_win_streak INT DEFAULT 0, -- Colonne pour stocker la meilleure série de victoires
@@ -82,3 +82,38 @@ CREATE TABLE adjustments (
     FOREIGN KEY (match_id) REFERENCES matches(id)
 );
 
+-- Créer la table avec les colonnes correctes
+CREATE TABLE IF NOT EXISTS duo_matches (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    team1_player1 INT(11) NOT NULL,
+    team1_player2 INT(11) NOT NULL,
+    team2_player1 INT(11) NOT NULL,
+    team2_player2 INT(11) NOT NULL,
+    team1_score INT(11) DEFAULT NULL,
+    team2_score INT(11) DEFAULT NULL,
+    observed_team1 FLOAT DEFAULT NULL,
+    observed_team2 FLOAT DEFAULT NULL,
+    victory_margin INT(11) DEFAULT NULL,
+    victory_factor FLOAT DEFAULT NULL,
+    probability_team1 FLOAT DEFAULT NULL,
+    probability_team2 FLOAT DEFAULT NULL,
+    old_mmr_team1_player1 INT(11) DEFAULT NULL,
+    old_mmr_team1_player2 INT(11) DEFAULT NULL,
+    old_mmr_team2_player1 INT(11) DEFAULT NULL,
+    old_mmr_team2_player2 INT(11) DEFAULT NULL,
+    new_mmr_team1_player1 INT(11) DEFAULT NULL,
+    new_mmr_team1_player2 INT(11) DEFAULT NULL,
+    new_mmr_team2_player1 INT(11) DEFAULT NULL,
+    new_mmr_team2_player2 INT(11) DEFAULT NULL,
+    elo_difference INT(11) DEFAULT NULL,
+    match_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    points_team1 INT(11) DEFAULT NULL,
+    points_team2 INT(11) DEFAULT NULL,
+    win_streak_bonus_team1 INT(11) DEFAULT NULL,
+    win_streak_bonus_team2 INT(11) DEFAULT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (team1_player1) REFERENCES players(id),
+    FOREIGN KEY (team1_player2) REFERENCES players(id),
+    FOREIGN KEY (team2_player1) REFERENCES players(id),
+    FOREIGN KEY (team2_player2) REFERENCES players(id)
+);

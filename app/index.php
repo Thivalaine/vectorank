@@ -4,6 +4,20 @@
 ?>
 
 <div class="container">
+<!-- Bootstrap Alert -->
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    <strong>Nouvelle mise à jour !</strong> Découvrez les dernières améliorations apportées au jeu :
+    <ul>
+        <li><strong>Mode Duo :</strong> Ajout du mode de jeu en duo permettant aux joueurs de former des équipes de deux pour participer aux matchs.</li>
+        <li><strong>Profil des joueurs :</strong> Ajout d'un onglet de profil pour afficher les matchs en duo.</li>
+        <li><strong>Match de la 3ème place :</strong> Introduction des matchs pour déterminer le troisième classement dans les tournois, offrant plus de compétitivité.</li>
+        <li><strong>Correction de bug :</strong> Résolution d’un problème avec la colonne <code>old_mmr</code> lors de l’ajout d’un joueur.</li>
+    </ul>
+    Découvrez ces nouvelles options et améliorez votre expérience de jeu !
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+
+
     <div class="d-flex flex-column flex-md-row align-items-center justify-content-between mb-3">
         <h1 class="header-title">Liste des joueurs</h1>
         <div class="d-flex flex-row flex-md-row align-items-center justify-content-end gap-2">
@@ -12,6 +26,9 @@
             </a>
             <a href="add_match.php" class="btn btn-primary">
                 <i class="fas fa-plus-circle me-2"></i> Match
+            </a>
+            <a href="add_match_double.php" class="btn btn-primary">
+                <i class="fas fa-plus-circle me-2"></i> Match double
             </a>
         </div>
     </div>

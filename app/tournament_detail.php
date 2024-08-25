@@ -34,6 +34,7 @@ $matchesByRound = [
     'huitième' => [],
     'quart' => [],
     'demi' => [],
+    'troisième' => [], // Ajout de la troisième place
     'finale' => []
 ];
 
@@ -51,6 +52,7 @@ $eighthFinalWinners = [];
 $quarterFinalWinners = [];
 $semiFinalWinners = [];
 $finalWinner = null;
+$thirdPlaceWinner = null;
 
 foreach ($matchesByRound['huitième'] as $match) {
     if (isset($match['score1']) && isset($match['score2'])) {
@@ -73,6 +75,12 @@ foreach ($matchesByRound['demi'] as $match) {
     }
 }
 
+foreach ($matchesByRound['troisième'] as $match) {
+    if (isset($match['score1']) && isset($match['score2'])) {
+        $thirdPlaceWinner = $match['score1'] > $match['score2'] ? $match['player1_name'] : $match['player2_name'];
+    }
+}
+
 if (!empty($matchesByRound['finale'])) {
     $finalMatch = $matchesByRound['finale'][0];
     if (isset($finalMatch['score1']) && isset($finalMatch['score2'])) {
@@ -84,6 +92,8 @@ if (!empty($matchesByRound['finale'])) {
 $currentPhase = '';
 if (!empty($matchesByRound['finale'])) {
     $currentPhase = 'finale';
+} elseif (!empty($matchesByRound['troisième'])) {
+    $currentPhase = 'troisième';
 } elseif (!empty($matchesByRound['demi'])) {
     $currentPhase = 'demi';
 } elseif (!empty($matchesByRound['quart'])) {
@@ -295,6 +305,49 @@ $potentialFinals = array_slice($semiFinalWinners, 0, 2);
             <?php endforeach; ?>
         <?php endif; ?>
     </div>
+
+    <!-- Match de 3ème place -->
+<div class="row tournament-phase">
+    <div class="col-12">
+        <h4 class="text-center">Match de 3ème Place</h4>
+    </div>
+    <?php if (empty($matchesByRound['troisième'])): ?>
+        <div class="col-12 text-center">
+            <p>Aucun match n'a été joué pour la 3ème place.</p>
+        </div>
+    <?php else: ?>
+        <?php foreach ($matchesByRound['troisième'] as $match): ?>
+            <div class="col-12 col-md-6 col-lg-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <?php echo $match['player1_anonymized'] ? "Anonyme" : htmlspecialchars($match['player1_name']); ?> 
+                            vs 
+                            <?php echo $match['player2_anonymized'] ? "Anonyme" : htmlspecialchars($match['player2_name']); ?>
+                        </h5>
+                        <div class="outcome">
+                            <?php if (isset($match['score1']) && isset($match['score2'])): ?>
+                                <h4 class="score"><?php echo htmlspecialchars($match['score1']); ?> - <?php echo htmlspecialchars($match['score2']); ?></h4>
+                                <span class="winner text-success font-weight-bold">
+                                    <span class="badge bg-success">Victoire</span> <?php echo htmlspecialchars($match['score1'] > $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
+                                    <span class="badge bg-warning">3ème</span>
+                                </span>
+                                <span class="loser text-danger font-weight-bold">
+                                    <span class="badge bg-danger">Défaite</span> <?php echo htmlspecialchars($match['score1'] < $match['score2'] ? ($match['player1_anonymized'] ? "Anonyme" : $match['player1_name']) : ($match['player2_anonymized'] ? "Anonyme" : $match['player2_name'])); ?>
+                                </span>
+                            <?php else: ?>
+                                <h4 class="score">Non joué</h4>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (!isset($match['score1']) || !isset($match['score2'])): ?>
+                            <a href="add_match_tournament.php?id=<?php echo $match['id']; ?>&tournament_id=<?php echo $tournamentId ?>&player1_id=<?php echo $match['player1']; ?>&player2_id=<?php echo $match['player2']; ?>" class="btn btn-primary">Ajouter un score</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+        <?php endforeach; ?>
+    <?php endif; ?>
+</div>
 
     <!-- Finale -->
     <div class="row tournament-phase">

@@ -185,6 +185,9 @@ $mostWonAgainstName = 'N/A';
             <li class="nav-item">
                 <a class="nav-link" id="tab2-tab" data-bs-toggle="tab" href="#tab2" role="tab" aria-controls="tab2" aria-selected="false">Tournois</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" id="tab3-tab" data-bs-toggle="tab" href="#tab3" role="tab" aria-controls="tab3" aria-selected="false">Matchs en équipe</a>
+            </li>
         </ul>
 
         <!-- Tab content -->
@@ -320,241 +323,365 @@ $mostWonAgainstName = 'N/A';
                 </div>
             </div>
             <div class="tab-pane fade" id="tab2" role="tabpanel" aria-labelledby="tab2-tab">
-        <div class="collapse show" id="collapseTab2">
-            <div class="card card-body">
-                <!-- Formulaire de sélection de tournoi -->
-                <form method="GET" action="player_profile.php" class="mb-4">
-                    <input type="hidden" name="id" value="<?php echo $playerId; ?>">
-                    <label for="tournament_id">Sélectionner un tournoi:</label>
-                    <select name="tournament_id" class="form-select" onchange="this.form.submit()">
-                        <option value="">Tous les tournois</option>
-                        <?php
-                        // Assurez-vous que $player_id contient l'ID du joueur actuel
-                        $player_id = $playerId;
+                <div class="collapse show" id="collapseTab2">
+                    <div class="card card-body">
+                        <!-- Formulaire de sélection de tournoi -->
+                        <form method="GET" action="player_profile.php" class="mb-4">
+                            <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+                            <label for="tournament_id">Sélectionner un tournoi:</label>
+                            <select name="tournament_id" class="form-select" onchange="this.form.submit()">
+                                <option value="">Tous les tournois</option>
+                                <?php
+                                // Assurez-vous que $player_id contient l'ID du joueur actuel
+                                $player_id = $playerId;
 
-                        // Récupérer les tournois où le joueur a participé
-                        $tournamentsResult = $conn->query("
-                            SELECT t.*
-                            FROM tournaments t
-                            INNER JOIN tournament_players tp ON t.id = tp.tournament_id
-                            WHERE tp.player_id = $player_id
-                            ORDER BY t.start_date DESC
-                        ");
+                                // Récupérer les tournois où le joueur a participé
+                                $tournamentsResult = $conn->query("
+                                    SELECT t.*
+                                    FROM tournaments t
+                                    INNER JOIN tournament_players tp ON t.id = tp.tournament_id
+                                    WHERE tp.player_id = $player_id
+                                    ORDER BY t.start_date DESC
+                                ");
 
-                        // Générer les options du menu déroulant
-                        while ($tournament = $tournamentsResult->fetch_assoc()) {
-                            $selected = (isset($_GET['tournament_id']) && $_GET['tournament_id'] == $tournament['id']) ? 'selected' : '';
-                            echo "<option value=\"{$tournament['id']}\" $selected>{$tournament['name']} ({$tournament['start_date']} - {$tournament['end_date']})</option>";
-                        }
-                        ?>
-                    </select>
-                </form>
-                <div class="table-responsive">
-                <table class="table table-striped table-bordered">
-    <thead>
-        <tr>
-            <th>Date</th>
-            <th>Adversaire</th>
-            <th>Score</th>
-            <th>MMR</th>
-            <th>MMR Adversaire</th>
-            <th>Tournament</th>
-            <th>WS</th>
-            <th>Détails</th>
-        </tr>
-    </thead>
-    <tbody>
-        <?php
-        // Récupération des matchs de tournois selon la sélection
-        $tournamentIdCondition = isset($_GET['tournament_id']) && !empty($_GET['tournament_id']) ? "AND m.tournament_id = " . (int)$_GET['tournament_id'] : "";
+                                // Générer les options du menu déroulant
+                                while ($tournament = $tournamentsResult->fetch_assoc()) {
+                                    $selected = (isset($_GET['tournament_id']) && $_GET['tournament_id'] == $tournament['id']) ? 'selected' : '';
+                                    echo "<option value=\"{$tournament['id']}\" $selected>{$tournament['name']} ({$tournament['start_date']} - {$tournament['end_date']})</option>";
+                                }
+                                ?>
+                            </select>
+                        </form>
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Adversaire</th>
+                                        <th>Score</th>
+                                        <th>MMR</th>
+                                        <th>MMR Adversaire</th>
+                                        <th>Tournament</th>
+                                        <th>WS</th>
+                                        <th>Détails</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    // Récupération des matchs de tournois selon la sélection
+                                    $tournamentIdCondition = isset($_GET['tournament_id']) && !empty($_GET['tournament_id']) ? "AND m.tournament_id = " . (int)$_GET['tournament_id'] : "";
 
-        $matchesQuery = "
-            SELECT 
-                m.*, 
-                p1.name AS player1_name, 
-                p2.name AS player2_name,
-                p1.is_anonymized AS p1_anonymized,
-                p2.is_anonymized AS p2_anonymized,
-                IF(m.player1 = $playerId, m.old_mmr1, m.old_mmr2) AS player_old_mmr,
-                IF(m.player1 = $playerId, m.new_mmr1, m.new_mmr2) AS player_new_mmr,
-                IF(m.player1 = $playerId, m.old_mmr2, m.old_mmr1) AS opponent_old_mmr,
-                IF(m.player1 = $playerId, m.new_mmr2, m.new_mmr1) AS opponent_new_mmr,
-                t.name AS tournament_name,
-                IF(m.player1 = $playerId, m.win_streak_bonus1, m.win_streak_bonus2) AS player_bonus,
-                IF(m.player1 = $playerId, m.points1, m.points2) AS player_points,
-                IF(m.player1 = $playerId, m.points2, m.points1) AS opponent_points,
-                IF(m.player1 = $playerId, m.win_streak_bonus2, m.win_streak_bonus1) AS opponent_bonus
-            FROM matches m
-            JOIN players p1 ON m.player1 = p1.id
-            JOIN players p2 ON m.player2 = p2.id
-            LEFT JOIN tournaments t ON m.tournament_id = t.id
-            WHERE (m.player1 = $playerId OR m.player2 = $playerId) 
-            AND m.tournament_id IS NOT NULL 
-            $tournamentIdCondition
-            ORDER BY m.match_date DESC 
-            LIMIT $matchesPerPage OFFSET $offset
-        ";
+                                    $matchesQuery = "
+                                        SELECT 
+                                            m.*, 
+                                            p1.name AS player1_name, 
+                                            p2.name AS player2_name,
+                                            p1.is_anonymized AS p1_anonymized,
+                                            p2.is_anonymized AS p2_anonymized,
+                                            IF(m.player1 = $playerId, m.old_mmr1, m.old_mmr2) AS player_old_mmr,
+                                            IF(m.player1 = $playerId, m.new_mmr1, m.new_mmr2) AS player_new_mmr,
+                                            IF(m.player1 = $playerId, m.old_mmr2, m.old_mmr1) AS opponent_old_mmr,
+                                            IF(m.player1 = $playerId, m.new_mmr2, m.new_mmr1) AS opponent_new_mmr,
+                                            t.name AS tournament_name,
+                                            IF(m.player1 = $playerId, m.win_streak_bonus1, m.win_streak_bonus2) AS player_bonus,
+                                            IF(m.player1 = $playerId, m.points1, m.points2) AS player_points,
+                                            IF(m.player1 = $playerId, m.points2, m.points1) AS opponent_points,
+                                            IF(m.player1 = $playerId, m.win_streak_bonus2, m.win_streak_bonus1) AS opponent_bonus
+                                        FROM matches m
+                                        JOIN players p1 ON m.player1 = p1.id
+                                        JOIN players p2 ON m.player2 = p2.id
+                                        LEFT JOIN tournaments t ON m.tournament_id = t.id
+                                        WHERE (m.player1 = $playerId OR m.player2 = $playerId) 
+                                        AND m.tournament_id IS NOT NULL 
+                                        $tournamentIdCondition
+                                        ORDER BY m.match_date DESC 
+                                        LIMIT $matchesPerPage OFFSET $offset
+                                    ";
 
-        $matchesResult = $conn->query($matchesQuery);
-        $winStreak = 0; // Initialisation de la variable de série de victoires
-        $opponentWinStreak = 0; // Initialisation de la série de victoires de l'adversaire
+                                    $matchesResult = $conn->query($matchesQuery);
+                                    $winStreak = 0; // Initialisation de la variable de série de victoires
+                                    $opponentWinStreak = 0; // Initialisation de la série de victoires de l'adversaire
 
-        while ($match = $matchesResult->fetch_assoc()) {
-            $isPlayer1 = $match['player1'] == $playerId;
-            $isOpponentAnonymized = $isPlayer1 ? $match['p2_anonymized'] : $match['p1_anonymized'];
-            $opponentName = $isPlayer1 ? $match['player2_name'] : $match['player1_name'];
-            $opponentId = $isPlayer1 ? $match['player2'] : $match['player1']; // Récupérer l'ID de l'adversaire
-            $score = $isPlayer1 ? "{$match['score1']} - {$match['score2']}" : "{$match['score2']} - {$match['score1']}";
+                                    while ($match = $matchesResult->fetch_assoc()) {
+                                        $isPlayer1 = $match['player1'] == $playerId;
+                                        $isOpponentAnonymized = $isPlayer1 ? $match['p2_anonymized'] : $match['p1_anonymized'];
+                                        $opponentName = $isPlayer1 ? $match['player2_name'] : $match['player1_name'];
+                                        $opponentId = $isPlayer1 ? $match['player2'] : $match['player1']; // Récupérer l'ID de l'adversaire
+                                        $score = $isPlayer1 ? "{$match['score1']} - {$match['score2']}" : "{$match['score2']} - {$match['score1']}";
 
-            // Déterminer la couleur de la ligne
-            $rowColor = ($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1']) ? 'table-success' : 'table-danger';
+                                        // Déterminer la couleur de la ligne
+                                        $rowColor = ($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1']) ? 'table-success' : 'table-danger';
 
-            // Préparer les données MMR
-            $playerOldMMR = $isPlayer1 ? $match['old_mmr1'] : $match['old_mmr2'];
-            $playerNewMMR = $isPlayer1 ? $match['new_mmr1'] : $match['new_mmr2'];
-            $opponentOldMMR = $isPlayer1 ? $match['old_mmr2'] : $match['old_mmr1'];
-            $opponentNewMMR = $isPlayer1 ? $match['new_mmr2'] : $match['new_mmr1'];
+                                        // Préparer les données MMR
+                                        $playerOldMMR = $isPlayer1 ? $match['old_mmr1'] : $match['old_mmr2'];
+                                        $playerNewMMR = $isPlayer1 ? $match['new_mmr1'] : $match['new_mmr2'];
+                                        $opponentOldMMR = $isPlayer1 ? $match['old_mmr2'] : $match['old_mmr1'];
+                                        $opponentNewMMR = $isPlayer1 ? $match['new_mmr2'] : $match['new_mmr1'];
 
-            // Points et bonus du joueur
-            $pointsDisplayPlayer = '';
-            if ($match['player_points'] != 0) {
-                $pointsDisplayPlayer .= ($match['player_points'] > 0 ? "(+{$match['player_points']}" : "({$match['player_points']}");
-                if (!empty($match['player_bonus'])) {
-                    $pointsDisplayPlayer .= ", +{$match['player_bonus']} WS";
+                                        // Points et bonus du joueur
+                                        $pointsDisplayPlayer = '';
+                                        if ($match['player_points'] != 0) {
+                                            $pointsDisplayPlayer .= ($match['player_points'] > 0 ? "(+{$match['player_points']}" : "({$match['player_points']}");
+                                            if (!empty($match['player_bonus'])) {
+                                                $pointsDisplayPlayer .= ", +{$match['player_bonus']} WS";
+                                            }
+                                            $pointsDisplayPlayer .= ")";
+                                        }
+
+                                        // Points et bonus de l'adversaire
+                                        $pointsDisplayOpponent = '';
+                                        if ($match['opponent_points'] != 0) {
+                                            $pointsDisplayOpponent .= ($match['opponent_points'] > 0 ? "(+{$match['opponent_points']}" : "({$match['opponent_points']}");
+                                            if (!empty($match['opponent_bonus'])) {
+                                                $pointsDisplayOpponent .= ", +{$match['opponent_bonus']} WS";
+                                            }
+                                            $pointsDisplayOpponent .= ")";
+                                        }
+
+                                        // Ajouter les points du vainqueur ou du perdant pour le joueur
+                                        if ($isPlayer1) {
+                                            $pointsDisplayPlayer .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
+                                            $pointsDisplayOpponent .= $match['score2'] > $match['score1'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
+                                        } else {
+                                            $pointsDisplayPlayer .= $match['score2'] > $match['score1'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
+                                            $pointsDisplayOpponent .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
+                                        }
+
+                                        // Ne rien afficher si les points sont nuls
+                                        $pointsDisplayPlayer = $pointsDisplayPlayer ?: '';
+                                        $pointsDisplayOpponent = $pointsDisplayOpponent ?: '';
+
+                                        // Déterminer si le joueur est en série de victoires
+                                        if (($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1'])) {
+                                            $winStreak++;
+                                            $opponentWinStreak = 0; // Réinitialiser si l'adversaire perd
+                                        } else {
+                                            $opponentWinStreak++; // Incrémenter la série de victoires de l'adversaire
+                                            $winStreak = 0; // Réinitialiser si le joueur perd
+                                        }
+
+                                        // Afficher la série de victoires dans la colonne correspondante
+                                        $winStreakDisplay = $winStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $winStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
+                                        $opponentWinStreakDisplay = $opponentWinStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $opponentWinStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
+
+                                        // Gérer l'affichage des informations en fonction de l'anonymat de l'adversaire
+                                        if ($isOpponentAnonymized) {
+                                            $opponentName = 'Anonyme';
+                                            $opponentMMRDisplay = '****';
+                                            $pointsDisplayOpponent = ''; // Ne pas afficher les points de l'adversaire
+                                            $opponentProfileLink = 'Anonyme'; // Pas de lien pour un adversaire anonymisé
+                                        } else {
+                                            $opponentMMRDisplay = $isPlayer1 ? "{$match['old_mmr2']} → <strong>{$match['new_mmr2']}</strong>" : "{$match['old_mmr1']} → <strong>{$match['new_mmr1']}</strong>";
+                                            $opponentProfileLink = "<a href='player_profile.php?id=$opponentId&tab=tab2' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>".htmlspecialchars($opponentName)."</a>";
+                                        }
+
+                                        // Affichage du tableau
+                                        echo "<tr class='$rowColor'>
+                                            <td>{$match['match_date']}</td>
+                                            <td>$opponentProfileLink</td>
+                                            <td>$score</td>
+                                            <td>$playerOldMMR → <strong>$playerNewMMR</strong> <span>$pointsDisplayPlayer</span></td>
+                                            <td>$opponentMMRDisplay <span>$pointsDisplayOpponent</span></td>
+                                            <td>" . htmlspecialchars($match['tournament_name'] ?? 'Aucun') . "</td>
+                                            <td>$winStreakDisplay / $opponentWinStreakDisplay</td>
+                                            <td><a href='tournament_detail.php?id={$match['tournament_id']}' class='btn btn-primary btn-sm'><i class='fa-solid fa-circle-info'></i></a></td>
+                                        </tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="tab3" role="tabpanel" aria-labelledby="tab3-tab">
+                <div class="collapse show" id="collapseTab3">
+                    <div class="card card-body">
+                    <div class="table-responsive">
+    <table class="table table-striped table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Joueur 1 (Équipe 1)</th>
+                <th>Joueur 2 (Équipe 1)</th>
+                <th>Joueur 1 (Équipe 2)</th>
+                <th>Joueur 2 (Équipe 2)</th>
+                <th>Score</th>
+                <th>MMR Équipe 1</th>
+                <th>MMR Équipe 2</th>
+                <th>Série de victoires (Équipe 1)</th>
+                <th>Série de victoires (Équipe 2)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php
+            $playerId = $_GET['id'];
+
+            $duoMatchesQuery = "
+                SELECT 
+                    m.*, 
+                    p1.name AS team1_player1_name, 
+                    p2.name AS team1_player2_name, 
+                    p3.name AS team2_player1_name, 
+                    p4.name AS team2_player2_name,
+                    m.win_streak_bonus_team1,
+                    m.win_streak_bonus_team2,
+                    p1.id AS team1_player1_id,
+                    p2.id AS team1_player2_id,
+                    p3.id AS team2_player1_id,
+                    p4.id AS team2_player2_id
+                FROM duo_matches m
+                JOIN players p1 ON m.team1_player1 = p1.id
+                JOIN players p2 ON m.team1_player2 = p2.id
+                JOIN players p3 ON m.team2_player1 = p3.id
+                JOIN players p4 ON m.team2_player2 = p4.id
+                ORDER BY m.match_date DESC 
+                LIMIT $matchesPerPage OFFSET $offset
+            ";
+
+            $duoMatchesResult = $conn->query($duoMatchesQuery);
+
+            if (!$duoMatchesResult) {
+                die("Error: " . $conn->error);
+            }
+
+            while ($match = $duoMatchesResult->fetch_assoc()) {
+                // Determine if the player's team won
+                $team1Score = $match['team1_score'];
+                $team2Score = $match['team2_score'];
+                $team1Won = $team1Score > $team2Score;
+                $playerInTeam1 = ($match['team1_player1_id'] == $playerId || $match['team1_player2_id'] == $playerId);
+                $playerInTeam2 = ($match['team2_player1_id'] == $playerId || $match['team2_player2_id'] == $playerId);
+
+                // Determine the row color based on whether the player's team won
+                if (($team1Won && $playerInTeam1) || (!$team1Won && $playerInTeam2)) {
+                    $rowColor = 'table-success';
+                } else {
+                    $rowColor = 'table-danger';
                 }
-                $pointsDisplayPlayer .= ")";
-            }
 
-            // Points et bonus de l'adversaire
-            $pointsDisplayOpponent = '';
-            if ($match['opponent_points'] != 0) {
-                $pointsDisplayOpponent .= ($match['opponent_points'] > 0 ? "(+{$match['opponent_points']}" : "({$match['opponent_points']}");
-                if (!empty($match['opponent_bonus'])) {
-                    $pointsDisplayOpponent .= ", +{$match['opponent_bonus']} WS";
+                // Format the score with the higher score first
+                if ($team1Score > $team2Score) {
+                    $formattedScore = "{$team1Score} - {$team2Score}";
+                } else {
+                    $formattedScore = "{$team2Score} - {$team1Score}";
                 }
-                $pointsDisplayOpponent .= ")";
+
+                // Points and bonus calculations
+                $pointsTeam1 = round($match['points_team1'] / 2);
+                $pointsTeam2 = round($match['points_team2'] / 2);
+                $bonusTeam1 = round($match['win_streak_bonus_team1'] / 2);
+                $bonusTeam2 = round($match['win_streak_bonus_team2'] / 2);
+
+                // Adjust MMR points based on whether Team 1 won or lost
+                $mmrPointsTeam1 = $team1Won ? "+{$pointsTeam1} +{$bonusTeam1} WS)" : "{$pointsTeam1}, +{$bonusTeam1} WS";
+                $mmrPointsTeam2 = $team1Won ? "+{$pointsTeam2} +{$bonusTeam2} WS)" : "+{$pointsTeam2}, +{$bonusTeam2} WS";
+
+                // Win streak display
+                $winStreakDisplayTeam1 = !empty($bonusTeam1) ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> {$bonusTeam1}</span>" : "<span class='badge bg-secondary'>Aucune</span>";
+                $winStreakDisplayTeam2 = !empty($bonusTeam2) ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> {$bonusTeam2}</span>" : "<span class='badge bg-secondary'>Aucune</span>";
+
+                echo "<tr class='$rowColor'>
+                    <td>{$match['match_date']}</td>
+                    <td>
+                        <a href='/player_profile.php?id={$match['team1_player1_id']}' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>{$match['team1_player1_name']}</a>
+                    </td>
+                    <td>
+                        <a href='/player_profile.php?id={$match['team1_player2_id']}' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>{$match['team1_player2_name']}</a>
+                    </td>
+                    <td>
+                        <a href='/player_profile.php?id={$match['team2_player1_id']}' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>{$match['team2_player1_name']}</a>
+                    </td>
+                    <td>
+                        <a href='/player_profile.php?id={$match['team2_player2_id']}' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>{$match['team2_player2_name']}</a>
+                    </td>
+                    <td>{$formattedScore}</td>
+                    <td>{$match['old_mmr_team1_player1']} → <strong>{$match['new_mmr_team1_player1']} ({$mmrPointsTeam1})</strong> / {$match['old_mmr_team1_player2']} → <strong>{$match['new_mmr_team1_player2']} ({$mmrPointsTeam1})</strong></td>
+                    <td>{$match['old_mmr_team2_player1']} → <strong>{$match['new_mmr_team2_player1']} ({$mmrPointsTeam2})</strong> / {$match['old_mmr_team2_player2']} → <strong>{$match['new_mmr_team2_player2']} ({$mmrPointsTeam2})</strong></td>
+                    <td>$winStreakDisplayTeam1</td>
+                    <td>$winStreakDisplayTeam2</td>
+                </tr>";
             }
+            ?>
+        </tbody>
+    </table>
+</div>
 
-            // Ajouter les points du vainqueur ou du perdant pour le joueur
-            if ($isPlayer1) {
-                $pointsDisplayPlayer .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
-                $pointsDisplayOpponent .= $match['score2'] > $match['score1'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
-            } else {
-                $pointsDisplayPlayer .= $match['score2'] > $match['score1'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
-                $pointsDisplayOpponent .= $match['score1'] > $match['score2'] ? " +{$match['winner_points']} TP" : " +{$match['consolation_points']} TP";
-            }
 
-            // Ne rien afficher si les points sont nuls
-            $pointsDisplayPlayer = $pointsDisplayPlayer ?: '';
-            $pointsDisplayOpponent = $pointsDisplayOpponent ?: '';
 
-            // Déterminer si le joueur est en série de victoires
-            if (($isPlayer1 && $match['score1'] > $match['score2']) || (!$isPlayer1 && $match['score2'] > $match['score1'])) {
-                $winStreak++;
-                $opponentWinStreak = 0; // Réinitialiser si l'adversaire perd
-            } else {
-                $opponentWinStreak++; // Incrémenter la série de victoires de l'adversaire
-                $winStreak = 0; // Réinitialiser si le joueur perd
-            }
 
-            // Afficher la série de victoires dans la colonne correspondante
-            $winStreakDisplay = $winStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $winStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
-            $opponentWinStreakDisplay = $opponentWinStreak > 0 ? "<span class='badge bg-warning'><i class='fas fa-fire'></i> $opponentWinStreak</span>" : "<span class='badge bg-secondary'>Aucune</span>";
 
-            // Gérer l'affichage des informations en fonction de l'anonymat de l'adversaire
-            if ($isOpponentAnonymized) {
-                $opponentName = 'Anonyme';
-                $opponentMMRDisplay = '****';
-                $pointsDisplayOpponent = ''; // Ne pas afficher les points de l'adversaire
-                $opponentProfileLink = 'Anonyme'; // Pas de lien pour un adversaire anonymisé
-            } else {
-                $opponentMMRDisplay = $isPlayer1 ? "{$match['old_mmr2']} → <strong>{$match['new_mmr2']}</strong>" : "{$match['old_mmr1']} → <strong>{$match['new_mmr1']}</strong>";
-                $opponentProfileLink = "<a href='player_profile.php?id=$opponentId&tab=tab2' class='text-decoration-none text-primary fw-bold' style='border-bottom: 1px dashed; transition: all 0.3s;'>".htmlspecialchars($opponentName)."</a>";
-            }
 
-            // Affichage du tableau
-            echo "<tr class='$rowColor'>
-                <td>{$match['match_date']}</td>
-                <td>$opponentProfileLink</td>
-                <td>$score</td>
-                <td>$playerOldMMR → <strong>$playerNewMMR</strong> <span>$pointsDisplayPlayer</span></td>
-                <td>$opponentMMRDisplay <span>$pointsDisplayOpponent</span></td>
-                <td>" . htmlspecialchars($match['tournament_name'] ?? 'Aucun') . "</td>
-                <td>$winStreakDisplay / $opponentWinStreakDisplay</td>
-                <td><a href='tournament_detail.php?id={$match['tournament_id']}' class='btn btn-primary btn-sm'><i class='fa-solid fa-circle-info'></i></a></td>
-            </tr>";
-        }
-        ?>
-    </tbody>
-</table>
 
+
+                    </div>
                 </div>
             </div>
         </div>
+            
+
+    <nav class="d-flex justify-content-between flex-column flex-sm-row align-items-center mt-2">
+        <ul class="pagination">
+            <?php if ($currentPage > 1): ?>
+                <li class="page-item">
+                    <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage - 1, $matchesPerPage, $searchQuery, $currentTab); ?>">Précédent</a>
+                </li>
+            <?php endif; ?>
+
+            <?php
+            // Afficher la première page
+            if ($totalPages > 1): ?>
+                <li class="page-item <?php echo ($currentPage == 1 ? 'active' : ''); ?>">
+                    <a class="page-link" href="<?php echo buildUrl($playerId, 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">1</a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($currentPage > 3): ?>
+                <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
+            <?php endif; ?>
+
+            <?php 
+            $startPage = max(2, $currentPage - 1); // page précédente
+            $endPage = min($totalPages - 1, $currentPage + 1); // page suivante
+
+            for ($i = $startPage; $i <= $endPage; $i++): ?>
+                <li class="page-item <?php echo ($i == $currentPage ? 'active' : ''); ?>">
+                    <a class="page-link" href="<?php echo buildUrl($playerId, $i, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $i; ?></a>
+                </li>
+            <?php endfor; ?>
+
+            <!-- Afficher les ellipses si nécessaire (sauf sur mobile) -->
+            <?php if ($currentPage < $totalPages - 2): ?>
+                <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
+            <?php endif; ?>
+
+            <!-- Afficher la dernière page -->
+            <?php if ($totalPages > 1): ?>
+                <li class="page-item <?php echo ($currentPage == $totalPages ? 'active' : ''); ?>">
+                    <a class="page-link" href="<?php echo buildUrl($playerId, $totalPages, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $totalPages; ?></a>
+                </li>
+            <?php endif; ?>
+
+            <?php if ($currentPage < $totalPages): ?>
+                <li class="page-item">
+                    <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage + 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">Suivant</a>
+                </li>
+            <?php endif; ?>
+        </ul>
+
+        <form class="mb-3 mt-3 mt-sm-0" method="GET" action="player_profile.php">
+            <input type="hidden" name="id" value="<?php echo $playerId; ?>">
+            <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
+            <input type="hidden" name="tab" value="<?php echo htmlspecialchars($currentTab); ?>"> <!-- Champ caché pour le tab -->
+            <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
+                <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
+                <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
+                    <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
+                </select>
+            </form>
+        </nav>
+        </div>
     </div>
-
-<nav class="d-flex justify-content-between flex-column flex-sm-row align-items-center mt-2">
-    <ul class="pagination">
-        <?php if ($currentPage > 1): ?>
-            <li class="page-item">
-                <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage - 1, $matchesPerPage, $searchQuery, $currentTab); ?>">Précédent</a>
-            </li>
-        <?php endif; ?>
-
-        <?php
-        // Afficher la première page
-        if ($totalPages > 1): ?>
-            <li class="page-item <?php echo ($currentPage == 1 ? 'active' : ''); ?>">
-                <a class="page-link" href="<?php echo buildUrl($playerId, 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">1</a>
-            </li>
-        <?php endif; ?>
-
-        <?php if ($currentPage > 3): ?>
-            <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
-        <?php endif; ?>
-
-        <?php 
-        $startPage = max(2, $currentPage - 1); // page précédente
-        $endPage = min($totalPages - 1, $currentPage + 1); // page suivante
-
-        for ($i = $startPage; $i <= $endPage; $i++): ?>
-            <li class="page-item <?php echo ($i == $currentPage ? 'active' : ''); ?>">
-                <a class="page-link" href="<?php echo buildUrl($playerId, $i, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $i; ?></a>
-            </li>
-        <?php endfor; ?>
-
-        <!-- Afficher les ellipses si nécessaire (sauf sur mobile) -->
-        <?php if ($currentPage < $totalPages - 2): ?>
-            <li class="page-item disabled d-none d-sm-inline"><span class="page-link">...</span></li>
-        <?php endif; ?>
-
-        <!-- Afficher la dernière page -->
-        <?php if ($totalPages > 1): ?>
-            <li class="page-item <?php echo ($currentPage == $totalPages ? 'active' : ''); ?>">
-                <a class="page-link" href="<?php echo buildUrl($playerId, $totalPages, $matchesPerPage, $searchQuery, $_GET['tab']); ?>"><?php echo $totalPages; ?></a>
-            </li>
-        <?php endif; ?>
-
-        <?php if ($currentPage < $totalPages): ?>
-            <li class="page-item">
-                <a class="page-link" href="<?php echo buildUrl($playerId, $currentPage + 1, $matchesPerPage, $searchQuery, $_GET['tab']); ?>">Suivant</a>
-            </li>
-        <?php endif; ?>
-    </ul>
-
-    <form class="mb-3 mt-3 mt-sm-0" method="GET" action="player_profile.php">
-        <input type="hidden" name="id" value="<?php echo $playerId; ?>">
-        <input type="hidden" name="search" value="<?php echo htmlspecialchars($searchQuery); ?>">
-        <input type="hidden" name="tab" value="<?php echo htmlspecialchars($currentTab); ?>"> <!-- Champ caché pour le tab -->
-        <select name="matchesPerPage" class="form-select" onchange="this.form.submit()">
-            <option value="10" <?php if ($matchesPerPage == 10) echo 'selected'; ?>>10</option>
-            <option value="20" <?php if ($matchesPerPage == 20) echo 'selected'; ?>>20</option>
-                <option value="50" <?php if ($matchesPerPage == 50) echo 'selected'; ?>>50</option>
-            </select>
-        </form>
-    </nav>
-    </div>
-</div>
 <script>
     document.querySelectorAll('.nav-link').forEach(function(tab) {
         tab.addEventListener('click', function(event) {

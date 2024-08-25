@@ -135,9 +135,23 @@ $total_players = $totalPlayersData['total_players'];
 $tournamentPhase = null;
 if ($tournament_id) {
     $tournamentResult = $conn->query("SELECT phase FROM tournaments WHERE id = $tournament_id");
+
+    // On récupère les données des joueurs pour vérifier s'ils sont dans la phase "troisième" ou "finale"
+    $player1Result = $conn->query("SELECT * FROM tournament_players WHERE tournament_id = $tournament_id AND player_id = $player1");
+    $player2Result = $conn->query("SELECT * FROM tournament_players WHERE tournament_id = $tournament_id AND player_id = $player2");
+    $player1Result = $player1Result->fetch_assoc();
+    $player2Result = $player2Result->fetch_assoc();
+
     if ($tournamentResult->num_rows > 0) {
         $tournamentData = $tournamentResult->fetch_assoc();
-        $tournamentPhase = $tournamentData['phase'];
+        
+        // ici on vérifie si les joueurs sont dans la phase "troisième" ou "finale", car s'il est en troisième il sort du cadre du tournoi
+        if ($player1Result['current_round'] === 'troisième' || $player2Result['current_round'] === 'troisième') {
+            $tournamentPhase = 'troisième';
+        } else {
+            // sinon on récupère la phase du tournoi
+            $tournamentPhase = $tournamentData['phase'];
+        }
     } else {
         die("Erreur: Tournoi non trouvé.");
     }
@@ -169,6 +183,10 @@ switch ($tournamentPhase) {
     case 'finale':
         $winner_points = $basePoints; // Les points de base pour le gagnant en finale
         $loser_points = $basePoints * 0.75; // 75% des points pour le perdant en finale
+        break;
+    case 'troisième':
+        $winner_points = $basePoints * 0.5; // 50% des points de la finale pour le gagnant en petite finale
+        $loser_points = $basePoints * 0.25; // 25% des points de la finale pour le perdant en petite finale
         break;
     case 'demi':
         $winner_points = $basePoints * 0.75; // 75% des points de la finale pour le gagnant en demi-finale
@@ -227,7 +245,6 @@ $conn->query($sql);
 $matchesCount = $conn->query("SELECT COUNT(*) as match_count FROM matches WHERE tournament_id = $tournament_id AND round = '$tournamentPhase' AND score1 IS NOT NULL AND score2 IS NOT NULL");
 $matchesCountResult = $matchesCount->fetch_assoc();
 $match_count = $matchesCountResult['match_count'];
-
 // Logique pour passer à la phase suivante
 $newPhase = null;
 
@@ -235,13 +252,23 @@ if ($tournamentPhase === 'huitième' && $match_count == 8) {
     $newPhase = 'quart'; // Passer à la phase quart
 
     // Mettre à jour les gagnants des huitièmes de finale
-    $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'huitième' AND score1 > score2
-                                    UNION
-                                    SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'huitième' AND score2 > score1");
+    $winnersResult = $conn->query("
+        SELECT player1 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'huitième' AND score1 > score2
+        UNION
+        SELECT player2 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'huitième' AND score2 > score1
+    ");
 
     while ($row = $winnersResult->fetch_assoc()) {
         $winnerId = $row['winner'];
-        $updateWinnerStatus = $conn->prepare("UPDATE tournament_players SET current_round = 'quart' WHERE player_id = ? AND tournament_id = ?");
+        $updateWinnerStatus = $conn->prepare("
+            UPDATE tournament_players 
+            SET current_round = 'quart' 
+            WHERE player_id = ? AND tournament_id = ?
+        ");
         $updateWinnerStatus->bind_param("ii", $winnerId, $tournament_id);
         $updateWinnerStatus->execute();
     }
@@ -250,13 +277,23 @@ if ($tournamentPhase === 'huitième' && $match_count == 8) {
     $newPhase = 'demi'; // Passer à la phase demi-finale
 
     // Mettre à jour les gagnants des quarts de finale
-    $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'quart' AND score1 > score2
-                                    UNION
-                                    SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'quart' AND score2 > score1");
+    $winnersResult = $conn->query("
+        SELECT player1 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'quart' AND score1 > score2
+        UNION
+        SELECT player2 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'quart' AND score2 > score1
+    ");
 
     while ($row = $winnersResult->fetch_assoc()) {
         $winnerId = $row['winner'];
-        $updateWinnerStatus = $conn->prepare("UPDATE tournament_players SET current_round = 'demi' WHERE player_id = ? AND tournament_id = ?");
+        $updateWinnerStatus = $conn->prepare("
+            UPDATE tournament_players 
+            SET current_round = 'demi' 
+            WHERE player_id = ? AND tournament_id = ?
+        ");
         $updateWinnerStatus->bind_param("ii", $winnerId, $tournament_id);
         $updateWinnerStatus->execute();
     }
@@ -265,13 +302,46 @@ if ($tournamentPhase === 'huitième' && $match_count == 8) {
     $newPhase = 'finale'; // Passer à la phase finale
 
     // Mettre à jour les gagnants des demi-finales
-    $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'demi' AND score1 > score2
-                                    UNION
-                                    SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'demi' AND score2 > score1");
+    $winnersResult = $conn->query("
+        SELECT player1 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'demi' AND score1 > score2
+        UNION
+        SELECT player2 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'demi' AND score2 > score1
+    ");
+
+    // Identifier les perdants des demi-finales
+    $losersResult = $conn->query("
+        SELECT player1 AS loser 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'demi' AND score1 < score2
+        UNION
+        SELECT player2 AS loser 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'demi' AND score2 < score1
+    ");
+
+    // Mettre à jour les perdants des demi-finales pour la phase de petite finale
+    while ($row = $losersResult->fetch_assoc()) {
+        $loserId = $row['loser'];
+        $updateLoserStatus = $conn->prepare("
+            UPDATE tournament_players 
+            SET current_round = 'troisième' 
+            WHERE player_id = ? AND tournament_id = ?
+        ");
+        $updateLoserStatus->bind_param("ii", $loserId, $tournament_id);
+        $updateLoserStatus->execute();
+    }
 
     while ($row = $winnersResult->fetch_assoc()) {
         $winnerId = $row['winner'];
-        $updateWinnerStatus = $conn->prepare("UPDATE tournament_players SET current_round = 'finale' WHERE player_id = ? AND tournament_id = ?");
+        $updateWinnerStatus = $conn->prepare("
+            UPDATE tournament_players 
+            SET current_round = 'finale' 
+            WHERE player_id = ? AND tournament_id = ?
+        ");
         $updateWinnerStatus->bind_param("ii", $winnerId, $tournament_id);
         $updateWinnerStatus->execute();
     }
@@ -284,9 +354,15 @@ if ($tournamentPhase === 'huitième' && $match_count == 8) {
     $conn->query($sql);
 
     // Récupérer le gagnant de la finale
-    $winnerResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'finale' AND score1 > score2
-                                    UNION
-                                    SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'finale' AND score2 > score1");
+    $winnerResult = $conn->query("
+        SELECT player1 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'finale' AND score1 > score2
+        UNION
+        SELECT player2 AS winner 
+        FROM matches 
+        WHERE tournament_id = $tournament_id AND round = 'finale' AND score2 > score1
+    ");
     
     if ($winnerResult->num_rows > 0) {
         $row = $winnerResult->fetch_assoc();
@@ -295,7 +371,7 @@ if ($tournamentPhase === 'huitième' && $match_count == 8) {
         // Mettre à jour le statut du gagnant
         $won = "UPDATE tournament_players SET is_won = 1 WHERE tournament_id = $tournament_id AND player_id = $winnerId";
         $conn->query($won);
-    }
+    }  
 }
 
 // Fonction pour insérer de nouveaux matchs
@@ -328,9 +404,9 @@ if ($newPhase) {
     
     if (!$updateTournamentPhase->execute()) {
         echo "Erreur lors de la mise à jour de la phase du tournoi : " . $conn->error;
-    } else {     
-        // COMPORTEMENT PARTIELLEMENT GERER ATTENTION   
+    } else {
         if ($newPhase === 'huitième') {
+            // Récupérer les gagnants des groupes
             $winnerResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'groupe' AND score1 > score2
                                             UNION
                                             SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'groupe' AND score2 > score1");
@@ -341,10 +417,9 @@ if ($newPhase) {
             // Insérer les nouveaux matchs pour les huitièmes
             insertNewMatches($conn, $tournament_id, $winners, 'huitième');
         }
-
-        // Insérer de nouveaux matchs en fonction de la phase suivante
+        
         if ($newPhase === 'quart') {
-            // Récupérer les gagnants des phases précédentes pour les quarts
+            // Récupérer les gagnants des huitièmes
             $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'huitième' AND score1 > score2
                                             UNION
                                             SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'huitième' AND score2 > score1");
@@ -354,8 +429,8 @@ if ($newPhase) {
             }
             // Insérer les nouveaux matchs pour les quarts
             insertNewMatches($conn, $tournament_id, $winners, 'quart');
-        } elseif ($newPhase === 'demi') {
-            // Récupérer les gagnants des quarts pour les demi-finales
+        } elseif ($newPhase === 'demi') {    
+            // Récupérer les gagnants des quarts
             $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'quart' AND score1 > score2
                                             UNION
                                             SELECT player2 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'quart' AND score2 > score1");
@@ -363,9 +438,22 @@ if ($newPhase) {
             while ($winner = $winnersResult->fetch_assoc()) {
                 $winners[] = $winner['winner'];
             }
+        
             // Insérer les nouveaux matchs pour les demi-finales
             insertNewMatches($conn, $tournament_id, $winners, 'demi');
         } elseif ($newPhase === 'finale') {
+            // Mettre à jour les perdants des demi-finales pour le match de la troisième place
+            $losersResult = $conn->query("SELECT player1 AS loser FROM matches WHERE tournament_id = $tournament_id AND round = 'demi' AND score1 < score2
+                                            UNION
+                                            SELECT player2 AS loser FROM matches WHERE tournament_id = $tournament_id AND round = 'demi' AND score2 < score1");
+            $losers = [];
+            while ($loser = $losersResult->fetch_assoc()) {
+                $losers[] = $loser['loser'];
+            }
+        
+            // Insérer le match pour la troisième place
+            insertNewMatches($conn, $tournament_id, $losers, 'troisième');
+        
             // Récupérer les gagnants des demi-finales pour la finale
             $winnersResult = $conn->query("SELECT player1 AS winner FROM matches WHERE tournament_id = $tournament_id AND round = 'demi' AND score1 > score2
                                             UNION
@@ -374,9 +462,9 @@ if ($newPhase) {
             while ($winner = $winnersResult->fetch_assoc()) {
                 $winners[] = $winner['winner'];
             }
-            // Insérer le nouveau match pour la finale
+            // Insérer le match pour la finale
             insertNewMatches($conn, $tournament_id, $winners, 'finale');
-        }
+        }        
     }
 }
 
