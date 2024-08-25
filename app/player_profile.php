@@ -517,6 +517,7 @@ $mostWonAgainstName = 'N/A';
             <?php
             $playerId = $_GET['id'];
 
+            // Ajout d'une condition WHERE pour ne sélectionner que les matchs impliquant le joueur
             $duoMatchesQuery = "
                 SELECT 
                     m.*, 
@@ -535,6 +536,7 @@ $mostWonAgainstName = 'N/A';
                 JOIN players p2 ON m.team1_player2 = p2.id
                 JOIN players p3 ON m.team2_player1 = p3.id
                 JOIN players p4 ON m.team2_player2 = p4.id
+                WHERE p1.id = $playerId OR p2.id = $playerId OR p3.id = $playerId OR p4.id = $playerId
                 ORDER BY m.match_date DESC 
                 LIMIT $matchesPerPage OFFSET $offset
             ";
@@ -606,6 +608,7 @@ $mostWonAgainstName = 'N/A';
         </tbody>
     </table>
 </div>
+
 
 
 
