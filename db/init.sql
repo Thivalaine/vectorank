@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS players (
     rank VARCHAR(20) DEFAULT 'Silver', -- Colonne pour stocker le rang du joueur
     current_win_streak INT DEFAULT 0, -- Colonne pour stocker la série de victoires actuelle
     best_win_streak INT DEFAULT 0, -- Colonne pour stocker la meilleure série de victoires
-    best_mmr INT DEFAULT 0 -- Colonne pour stocker le meilleur MMR du joueur
+    best_mmr INT DEFAULT 0, -- Colonne pour stocker le meilleur MMR du joueur
     new_ranking INT(11) NOT NULL DEFAULT 0, -- Colonne pour le nouveau classement
-    old_ranking INT(11) NOT NULL DEFAULT 0 -- Colonne pour l'ancien classement
+    old_ranking INT(11) NOT NULL DEFAULT 0, -- Colonne pour l'ancien classement
     is_anonymized TINYINT(1) DEFAULT '0' -- Colonne pour stocker si le joueur est anonymisé
 );
 
